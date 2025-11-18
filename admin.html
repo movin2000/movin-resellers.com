@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MovinResellers Admin Panel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-6">
+  <div class="max-w-5xl mx-auto bg-white rounded-xl shadow-lg p-6">
+    <h1 class="text-3xl font-bold text-teal-700 mb-6 text-center">MovinResellers — Admin Panel</h1>
+
+    <div id="login-section" class="flex flex-col items-center space-y-4">
+      <p class="text-gray-600 text-center">Enter the admin password to manage the store.</p>
+      <input id="password" type="password" placeholder="Admin Password"
+        class="border rounded-lg p-2 w-64 focus:ring-2 focus:ring-teal-400 outline-none">
+      <button id="login-btn" class="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg font-semibold">
+        Login
+      </button>
+      <p id="login-error" class="text-red-500 hidden">Invalid password. Try again.</p>
+    </div>
+
+    <div id="dashboard" class="hidden">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-semibold text-gray-800">Dashboard</h2>
+        <button id="logout-btn" class="bg-gray-300 hover:bg-gray-400 text-black px-4 py-2 rounded">Logout</button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" id="metrics"></div>
+
+      <div class="bg-white p-4 border rounded shadow-sm mb-6">
+        <div class="flex justify-between items-center mb-3">
+          <h3 class="font-bold text-lg text-teal-700">Products</h3>
+          <button id="newProduct" class="bg-teal-600 text-white px-3 py-1 rounded hover:bg-teal-700">+ Add</button>
+        </div>
+        <div id="productList" class="space-y-2"></div>
+      </div>
+
+      <div class="bg-white p-4 border rounded shadow-sm mb-6">
+        <h3 class="font-bold text-lg text-teal-700 mb-2">Users</h3>
+        <div id="userList"></div>
+      </div>
+
+      <div class="bg-white p-4 border rounded shadow-sm">
+        <h3 class="font-bold text-lg text-teal-700 mb-2">Orders</h3>
+        <div id="orderList"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const API = (window.API_URL || '') || 'http://localhost:4000';
+const ADMIN_PASSWORD = 'movin2020otikiz';
+let token = localStorage.getItem('movin_admin_token') || null;
+
+const loginSection = document.getElementById('login-section');
+const dashboard = document.getElementById('dashboard');
+const loginBtn = document.getElementById('login-btn');
+const logoutBtn = document.getElementById('logout-btn');
+const passwordInput = document.getElementById('password');
+const errorText = document.getElementById('login-error');
+
+function toast(msg, color = 'bg-teal-600') {
+  const el = document.createElement('div');
+  el.className = `fixed bottom-5 right-5 text-white px-4 py-2 rounded shadow ${color}`;
+  el.innerText = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2500);
+}
+
+// login logic
+loginBtn.addEventListener('click', async () => {
+  const pw = passwordInput.value.trim();
+  if (!pw) return alert('Enter password');
+
+  if (pw !== ADMIN_PASSWORD) {
+    errorText.classList.remove('hidden');
+    return;
+  }
+
+  try {
+    const res = await fetch(API + '/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed');
+    token = data.token;
+    localStorage.setItem('movin_admin_token', token);
+    loginSection.classList.add('hidden');
+    dashboard.classList.remove('hidden');
+    loadDashboard();
+    toast('Welcome, admin!');
+  } catch (err) {
+    console.error(err);
+    errorText.classList.remove('hidden');
+  }
+});
+
+logoutBtn.addEventListener('click', () => {
+  token = null;
+  localStorage.removeItem('movin_admin_token');
+  dashboard.classList.add('hidden');
+  loginSection.classList.remove('hidden');
+});
+
+function authFetch(url, opts = {}) {
+  opts.headers = opts.headers || {};
+  opts.headers['Authorization'] = 'Bearer ' + token;
+  opts.headers['Content-Type'] = 'application/json';
+  return fetch(API + url, opts);
+}
+
+async function loadDashboard() {
+  const [metrics, products, users, orders] = await Promise.all([
+    authFetch('/api/admin/metrics').then(r => r.json()),
+    authFetch('/api/products').then(r => r.json()),
+    authFetch('/api/users').then(r => r.json()),
+    authFetch('/api/orders').then(r => r.json())
+  ]);
+
+  // metrics
+  const metricsDiv = document.getElementById('metrics');
+  metricsDiv.innerHTML = `
+    <div class="bg-teal-50 p-4 rounded text-center">
+      <p class="text-sm text-gray-500">Products</p>
+      <p class="text-xl font-bold">${metrics.totalProducts}</p>
+    </div>
+    <div class="bg-teal-50 p-4 rounded text-center">
+      <p class="text-sm text-gray-500">Users</p>
+      <p class="text-xl font-bold">${metrics.totalUsers}</p>
+    </div>
+    <div class="bg-teal-50 p-4 rounded text-center">
+      <p class="text-sm text-gray-500">Revenue</p>
+      <p class="text-xl font-bold">UGX ${metrics.revenue.toLocaleString()}</p>
+    </div>`;
+
+  // products
+  const productList = document.getElementById('productList');
+  productList.innerHTML = '';
+  products.forEach(p => {
+    const div = document.createElement('div');
+    div.className = 'flex justify-between items-center border p-3 rounded';
+    div.innerHTML = `
+      <div>
+        <p class="font-semibold">${p.name}</p>
+        <p class="text-sm text-gray-500">UGX ${p.price.toLocaleString()} • ${p.category}</p>
+      </div>
+      <div>
+        <button class="bg-yellow-400 text-sm px-2 py-1 rounded edit" data-id="${p.id}">Edit</button>
+        <button class="bg-red-500 text-white text-sm px-2 py-1 rounded del" data-id="${p.id}">Delete</button>
+      </div>
+    `;
+    productList.appendChild(div);
+  });
+
+  // users
+  const userList = document.getElementById('userList');
+  userList.innerHTML = users.map(u =>
+    `<div class="border-b py-2">${u.name} — ${u.email} (${u.role})</div>`).join('');
+
+  // orders
+  const orderList = document.getElementById('orderList');
+  orderList.innerHTML = orders.map(o =>
+    `<div class="border-b py-2">${o.id} • ${o.status} • UGX ${o.total.toLocaleString()}</div>`).join('');
+
+  // product actions
+  document.querySelectorAll('.del').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      if (!confirm('Delete product ' + id + '?')) return;
+      await authFetch('/api/admin/products/' + id, { method: 'DELETE' });
+      toast('Deleted', 'bg-red-600');
+      loadDashboard();
+    });
+  });
+
+  document.querySelectorAll('.edit').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      const res = await fetch(API + '/api/products/' + id);
+      const p = await res.json();
+      const newName = prompt('Rename product:', p.name);
+      if (newName) {
+        p.name = newName;
+        await authFetch('/api/admin/products/' + id, { method: 'PUT', body: JSON.stringify(p) });
+        toast('Updated', 'bg-yellow-500');
+        loadDashboard();
+      }
+    });
+  });
+}
+</script>
+</body>
+</html>

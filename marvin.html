@@ -1,0 +1,2386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MovinResellers E-Commerce App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <style>
+        /* CSS Variables for Theming */
+        :root {
+            --primary-color: #0d9488; /* Tailwind teal-600 */
+            --secondary-bg: #ffffff;
+            --main-bg: #f3f4f6; /* Tailwind gray-100 */
+            --text-color: #1f2937; /* Tailwind gray-800 */
+            --border-color: #e5e7eb; /* Tailwind gray-200 */
+        }
+
+        /* Dark Mode Theme */
+        [data-theme="dark"] {
+            --secondary-bg: #1f2937; /* Darker gray for cards/modals */
+            --main-bg: #111827; /* Even darker for body background */
+            --text-color: #f9fafb; /* Light text */
+            --border-color: #374151; /* Dark border */
+        }
+        
+        body {
+            background-color: var(--main-bg);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Custom Styles */
+        .app-section {
+            display: none;
+            min-height: calc(100vh - 80px); /* Subtract header height */
+            padding-top: 80px;
+        }
+        
+        /* NEW: Modern Logo Styling */
+        .app-logo-text {
+            /* Makes the color slightly pop by adding a subtle shadow */
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2); 
+            transition: transform 0.3s ease-in-out;
+        }
+        .app-logo-text:hover {
+            /* Optional: Add a subtle lift on hover for interactivity */
+            transform: translateY(-1px);
+        }
+
+        /* Header Navigation */
+        .header-menu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 50;
+            background-color: var(--secondary-bg);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .tab-button {
+            padding: 0.5rem 1rem;
+            color: var(--text-color);
+            transition: color 0.2s;
+            position: relative;
+        }
+        .tab-button.active {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+            font-weight: bold;
+        }
+        .tab-button:hover {
+            color: var(--primary-color);
+        }
+        .tab-button .badge {
+            position: absolute;
+            top: 0px;
+            right: 0px;
+        }
+
+        /* Product Card specific styling */
+        .product-card {
+            background-color: var(--secondary-bg);
+            border-color: var(--border-color);
+        }
+        .product-image {
+            cursor: pointer;
+        }
+        .product-card button {
+            transition: background-color 0.2s;
+        }
+
+        /* Modal styling */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: none; /* Controlled by JS */
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .modal-content {
+            background-color: var(--main-bg);
+            width: 90%;
+            max-width: 600px;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* Form/Input Styling */
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--primary-color) !important;
+            box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.5) !important;
+        }
+        .input-error {
+            border-color: #ef4444 !important; /* Tailwind red-500 */
+        }
+        .error-text {
+            color: #ef4444;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        /* Toast Notification */
+        #toastContainer {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .toast {
+            min-width: 300px;
+            margin-top: 10px;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transform: translateX(100%);
+            transition: opacity 0.3s, transform 0.3s;
+            display: flex;
+            align-items: center;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .toast-success { background-color: #d1fae5; color: #065f46; border-left: 5px solid #10b981; }
+        .toast-error { background-color: #fee2e2; color: #991b1b; border-left: 5px solid #ef4444; }
+        .toast-info { background-color: #e0f2f1; color: #0f766e; border-left: 5px solid #2dd4bf; }
+        .toast-warning { background-color: #fef3c7; color: #b45309; border-left: 5px solid #f59e0b; }
+        
+        /* Loading Indicator */
+        #loadingIndicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Ripple Effect */
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple 0.6s linear;
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+        @keyframes ripple {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+        
+        /* Cart Animation */
+        .flying-image {
+            position: fixed;
+            z-index: 1000;
+            width: 150px; /* start size */
+            height: 150px;
+            object-fit: cover;
+            border-radius: 1rem;
+            transition: all 0.7s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            transform: scale(0.2);
+            opacity: 0.8;
+        }
+        .cart-hit-animation {
+            animation: shake 0.5s;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+
+        /* Admin Tab Styling */
+        .admin-tab-button.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        /* Cart Summary Popup */
+        #cartSummaryPopup {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        /* Order Tracking Timeline */
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 5px;
+            width: 2px;
+            height: 100%;
+            background: var(--border-color);
+        }
+        .timeline-item {
+            position: relative;
+            padding: 10px 0;
+        }
+        .timeline-dot {
+            position: absolute;
+            top: 15px;
+            left: 0;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--border-color);
+            z-index: 10;
+        }
+        .timeline-dot.active {
+            background: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.3);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <div id="loadingIndicator">
+        <div class="spinner"></div>
+    </div>
+
+    <div id="toastContainer"></div>
+
+    <header class="header-menu bg-white p-4 shadow-md flex justify-between items-center">
+        <div class="flex items-center space-x-6">
+            <h1 class="text-3xl font-bold text-teal-600 app-logo-text">MovinResellers</h1>
+            
+            <div class="hidden md:flex items-center w-full max-w-lg bg-gray-100 rounded-xl">
+                <input type="text" id="mainSearchInput" placeholder="Search products..." 
+                       onkeypress="if(event.key === 'Enter') executeSearch()"
+                       class="w-full p-2 bg-gray-100 rounded-l-xl focus:outline-none focus:ring-2 focus:ring-teal-500">
+                <button onclick="executeSearch()" class="p-2 bg-teal-600 text-white rounded-r-xl hover:bg-teal-700 ripple-effect">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+        
+        <nav class="flex items-center space-x-4">
+            <button class="tab-button" onclick="showSection('home')" data-target="home">
+                <i class="fas fa-home mr-2"></i> Home
+            </button>
+            <button class="tab-button relative" onclick="showSection('cart')" data-target="cart"
+                    onmouseenter="showCartSummary()" onmouseleave="hideCartSummary()">
+                <i class="fas fa-shopping-cart mr-2"></i> Cart
+                <span id="cartCount" class="badge bg-red-500 text-white text-xs px-2 py-0.5 rounded-full absolute -top-1 -right-1">0</span>
+            </button>
+            <button class="tab-button" onclick="showSection('profile')" data-target="profile">
+                <i class="fas fa-user-circle mr-2"></i> <span id="profileName">Profile</span>
+            </button>
+            <button class="tab-button" onclick="showSection('admin')" data-target="admin">
+                <i class="fas fa-user-shield mr-2"></i> Admin
+            </button>
+            <button id="themeToggle" class="text-xl p-2 rounded-full hover:bg-gray-100 transition-colors">
+                <i id="themeIcon" class="fas fa-moon"></i>
+            </button>
+        </nav>
+    </header>
+
+    <div id="cartSummaryPopup" class="absolute right-0 mt-[65px] mr-4 w-72 bg-secondary-bg rounded-lg shadow-2xl border border-border-color p-4 z-40">
+        <h3 class="font-bold text-lg mb-2 border-b pb-2 border-border-color">Cart Summary (<span id="summaryItemCount">0</span> Items)</h3>
+        <div id="cartSummaryItems" class="space-y-2 text-sm">
+            <p class="text-gray-500 italic">Your cart is empty.</p>
+        </div>
+        <div class="mt-4 pt-2 border-t border-border-color flex justify-between items-center font-bold">
+            <span>Total:</span>
+            <span class="text-teal-600" id="summaryTotal">UGX 0</span>
+        </div>
+        <button onclick="showSection('cart')" class="w-full bg-teal-600 text-white font-bold py-2 mt-3 rounded-lg hover:bg-teal-700 transition-colors ripple-effect text-sm">
+            View Cart & Checkout
+        </button>
+    </div>
+    
+    <main class="container mx-auto px-4 pb-12 pt-4">
+
+        <section id="home" class="app-section">
+            <h2 class="text-3xl font-bold mb-6 text-gray-900">Featured Products</h2>
+            
+            <div id="quickFilters" class="mb-8 flex flex-wrap gap-3">
+                <button id="filter-all" onclick="applyQuickCategoryFilter('all')" class="bg-teal-600 text-white font-semibold py-2 px-4 rounded-xl active transition-colors ripple-effect text-sm">All Products</button>
+                <button id="filter-new" onclick="applyQuickStatusFilter('new')" class="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-xl hover:bg-gray-300 transition-colors ripple-effect text-sm">New Arrivals</button>
+                <button id="filter-5star" onclick="applyQuickStatusFilter('5star')" class="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-xl hover:bg-gray-300 transition-colors ripple-effect text-sm">5-Star Rated</button>
+                <button id="filter-under50" onclick="applyQuickStatusFilter('under50')" class="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-xl hover:bg-gray-300 transition-colors ripple-effect text-sm">Under UGX 200,000</button>
+            </div>
+            
+            <div class="bg-secondary-bg p-6 rounded-2xl shadow-lg mb-8 flex flex-wrap gap-4 items-center border border-border-color">
+                <div class="flex-1 min-w-[200px]">
+                    <label for="categoryFilter" class="block text-sm font-medium text-gray-700 mb-1">Filter by Category</label>
+                    <select id="categoryFilter" onchange="applyFiltersAndSort()" class="w-full p-2 border border-gray-300 rounded-lg bg-secondary-bg focus:ring-teal-500 focus:border-teal-500">
+                        <option value="all">All Categories</option>
+                        <option value="Electronics">Electronics</option>
+                        <option value="Fashion">Fashion</option>
+                        <option value="Home Goods">Home Goods</option>
+                    </select>
+                </div>
+                
+                <div class="flex-1 min-w-[200px]">
+                    <label for="sortSelector" class="block text-sm font-medium text-gray-700 mb-1">Sort by</label>
+                    <select id="sortSelector" onchange="applyFiltersAndSort()" class="w-full p-2 border border-gray-300 rounded-lg bg-secondary-bg focus:ring-teal-500 focus:border-teal-500">
+                        <option value="default">Default</option>
+                        <option value="priceAsc">Price: Low to High</option>
+                        <option value="priceDesc">Price: High to Low</option>
+                        <option value="ratingDesc">Rating: High to Low</option>
+                    </select>
+                </div>
+
+                <div class="flex-1 min-w-[200px]">
+                    <label for="maxPriceFilter" class="block text-sm font-medium text-gray-700 mb-1">Max Price: <span id="priceLabel" class="font-bold text-teal-600">UGX 4,000,000</span></label>
+                    <input type="range" id="maxPriceFilter" min="1" max="1000" value="1000" oninput="updatePriceLabel()" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg">
+                </div>
+            </div>
+
+            <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                </div>
+        </section>
+
+        <section id="productDetail" class="app-section">
+            <button onclick="showSection('home')" class="text-teal-600 hover:text-teal-800 font-semibold mb-6">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Products
+            </button>
+            <div id="productDetailContent" class="bg-secondary-bg p-8 rounded-2xl shadow-xl border border-border-color">
+                </div>
+        </section>
+        
+        <section id="orderTracking" class="app-section">
+            <button onclick="showSection('profile')" class="text-teal-600 hover:text-teal-800 font-semibold mb-6">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Profile
+            </button>
+            <div class="bg-secondary-bg p-8 rounded-2xl shadow-xl border border-border-color">
+                <h2 class="text-3xl font-bold mb-6 text-gray-900">Order Tracking: <span id="trackingOrderId"></span></h2>
+                <div id="trackingTimeline" class="timeline">
+                    </div>
+                <div id="trackingDetails" class="mt-8 border-t pt-6 border-border-color">
+                    <h3 class="text-xl font-bold mb-4">Package Details</h3>
+                    <p>Estimated Delivery: <span id="trackingEstDate" class="font-semibold text-teal-600"></span></p>
+                    <p>Shipping Carrier: <span id="trackingCarrier">MovinExpress</span></p>
+                    <p>Total Items: <span id="trackingTotalItems"></span></p>
+                </div>
+            </div>
+        </section>
+
+
+        <section id="searchResults" class="app-section">
+            <h2 class="text-3xl font-bold mb-4 text-gray-900">Search Results</h2>
+            <p class="text-lg text-gray-600 mb-6">Showing <span id="searchResultCount" class="font-bold text-teal-600">0</span> results for: "<span id="searchQueryDisplay" class="font-bold text-gray-900"></span>"</p>
+            
+            <div id="searchResultsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                </div>
+        </section>
+
+        <section id="cart" class="app-section">
+            <h2 class="text-3xl font-bold mb-6 text-gray-900">Your Shopping Cart</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 space-y-4">
+                    <div id="emptyCartMessage" class="hidden bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-lg">
+                        <p class="font-bold">Your cart is empty!</p>
+                        <p>Time to find some great deals. <a href="#" onclick="showSection('home')" class="text-yellow-800 underline hover:text-yellow-900">Go shopping!</a></p>
+                    </div>
+                    <div id="cartItemsList" class="space-y-4">
+                        </div>
+                </div>
+                
+                <div class="lg:col-span-1 sticky top-20 h-fit">
+                    <div class="bg-secondary-bg p-6 rounded-2xl shadow-xl border border-border-color">
+                        <h3 class="text-xl font-bold mb-4 border-b pb-2">Order Summary</h3>
+                        
+                        <div class="space-y-3 text-gray-700">
+                            <div class="flex justify-between">
+                                <span>Items (<span id="cartItemCountDisplay">0</span>) Subtotal:</span>
+                                <span id="cartSubtotal" class="font-semibold">UGX 0</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Shipping:</span>
+                                <span class="font-semibold text-green-600">UGX 55,000</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Est. Tax (5%):</span>
+                                <span id="cartTax" class="font-semibold">UGX 0</span>
+                            </div>
+                            <div class="flex justify-between text-red-500 font-bold" id="discountLine">
+                                <span>Promo Discount:</span>
+                                <span id="cartDiscount">- UGX 0</span>
+                            </div>
+                            
+                            <div class="flex flex-col space-y-2 pt-4 border-t border-dashed border-gray-300">
+                                <label for="promoCodeInput" class="text-sm font-medium text-gray-700">Have a Promo Code?</label>
+                                <div class="flex">
+                                    <input type="text" id="promoCodeInput" placeholder="MOVING20" class="w-full p-2 border border-gray-300 rounded-l-lg shadow-sm bg-secondary-bg text-sm">
+                                    <button onclick="applyPromoCode()" class="bg-teal-600 text-white font-bold px-4 rounded-r-lg hover:bg-teal-700 transition-colors ripple-effect text-sm">Apply</button>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-between pt-3 border-t border-dashed border-gray-300">
+                                <span class="text-xl font-bold">Order Total:</span>
+                                <span id="cartTotal" class="text-xl font-bold text-teal-600">UGX 0</span>
+                            </div>
+                        </div>
+                        
+                        <button onclick="processCheckout()" class="w-full mt-6 bg-green-500 text-white font-bold py-3 rounded-xl hover:bg-green-600 transition-colors ripple-effect">
+                            <i class="fas fa-credit-card mr-2"></i> Secure Checkout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="profile" class="app-section">
+            <h2 class="text-3xl font-bold mb-6 text-gray-900">Welcome, <span id="profileNameDisplay">User</span></h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1 sticky top-20 h-fit">
+                    <div class="bg-secondary-bg p-6 rounded-2xl shadow-xl border border-border-color text-center">
+                        <img src="https://i.pravatar.cc/150?img=1" alt="User Avatar" class="w-24 h-24 rounded-full mx-auto mb-4 border-4 border-teal-500">
+                        <p class="text-2xl font-bold text-gray-900 mb-1" id="profileNameReadonly">Jane Doe</p>
+                        <p class="text-sm text-gray-500">Member Since: <span id="profileMemberSinceReadonly">Jan 15, 2023</span></p>
+                    </div>
+                    
+                    <div class="mt-8 bg-secondary-bg p-6 rounded-2xl shadow-xl border border-border-color">
+                        <h3 class="text-xl font-bold mb-4 border-b pb-2">Order History</h3>
+                        <div id="orderHistoryList" class="space-y-3">
+                            </div>
+                    </div>
+                </div>
+                
+                <div class="lg:col-span-2">
+                    <div class="bg-secondary-bg p-8 rounded-2xl shadow-xl border border-border-color mb-8">
+                        <h3 class="text-2xl font-bold mb-6 text-gray-900">Edit Profile Information</h3>
+                        
+                        <form id="profileEditForm" class="space-y-6">
+                            <div>
+                                <label for="editProfileName" class="block text-sm font-medium text-gray-700">Full Name</label>
+                                <input type="text" id="editProfileName" required class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 bg-secondary-bg">
+                            </div>
+                            
+                            <div>
+                                <label for="editProfileEmail" class="block text-sm font-medium text-gray-700">Email Address</label>
+                                <input type="email" id="editProfileEmail" required class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 bg-secondary-bg">
+                            </div>
+                            
+                            <div>
+                                <label for="editProfileAddress" class="block text-sm font-medium text-gray-700">Shipping Address</label>
+                                <textarea id="editProfileAddress" rows="3" required class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 bg-secondary-bg"></textarea>
+                            </div>
+                            
+                            <button type="submit" class="w-full bg-teal-600 text-white font-bold py-3 rounded-xl hover:bg-teal-700 transition-colors ripple-effect">
+                                <i class="fas fa-save mr-2"></i> Save Profile
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <div class="bg-secondary-bg p-8 rounded-2xl shadow-xl border border-border-color">
+                        <h3 class="text-2xl font-bold mb-6 text-gray-900">Saved Items (<span id="wishlistCount">0</span>)</h3>
+                        <div id="wishlistGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="admin" class="app-section">
+            <h2 class="text-3xl font-bold mb-6 text-gray-900">Admin Dashboard</h2>
+            
+            <div id="adminLoginForm" class="max-w-md mx-auto bg-secondary-bg p-8 rounded-2xl shadow-xl border border-border-color">
+                <h3 class="text-2xl font-bold mb-4 text-center">Admin Login</h3>
+                <p id="loginMessage" class="text-red-500 text-sm mb-4 text-center hidden">Incorrect password. Access Denied.</p>
+                <div class="space-y-4">
+                    <div>
+                        <label for="adminPassword" class="block text-sm font-medium text-gray-700">Password</label>
+                        <input type="password" id="adminPassword" class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 bg-secondary-bg" placeholder="Enter Admin Password">
+                    </div>
+                    <button id="adminLoginButton" class="w-full bg-teal-600 text-white font-bold py-3 rounded-xl hover:bg-teal-700 transition-colors ripple-effect">
+                        <i class="fas fa-sign-in-alt mr-2"></i> Log In
+                    </button>
+                </div>
+            </div>
+            
+            <div id="adminContent" class="hidden">
+                <div class="flex space-x-4 mb-6 border-b pb-4 border-border-color">
+                    <button id="tab-dashboard" onclick="switchAdminTab('dashboard')" class="admin-tab-button bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg transition-colors ripple-effect active">
+                        <i class="fas fa-chart-line mr-2"></i> Dashboard
+                    </button>
+                    <button id="tab-products" onclick="switchAdminTab('products')" class="admin-tab-button bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg transition-colors ripple-effect">
+                        <i class="fas fa-boxes mr-2"></i> Products
+                    </button>
+                    <button id="tab-collaborators" onclick="switchAdminTab('collaborators')" class="admin-tab-button bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg transition-colors ripple-effect">
+                        <i class="fas fa-users mr-2"></i> Users & Collaborators
+                    </button>
+                    <button onclick="adminLogout()" class="ml-auto bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 transition-colors ripple-effect">
+                        <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                    </button>
+                </div>
+                
+                <div id="adminDashboardView" class="admin-tab-content">
+                    <h3 class="text-2xl font-bold mb-6">Key Metrics</h3>
+                    <div id="metricsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        </div>
+                </div>
+
+                <div id="adminProductsView" class="admin-tab-content hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="relative flex-grow max-w-sm">
+                            <input type="text" id="adminSearchInput" oninput="renderAdminProductList()" placeholder="Search products by name or ID" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm bg-secondary-bg">
+                            <i class="fas fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        </div>
+                        <button onclick="showAddProductModal()" class="bg-teal-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-teal-700 transition-colors ripple-effect">
+                            <i class="fas fa-plus-circle mr-2"></i> Add New Product
+                        </button>
+                    </div>
+                    <div id="adminProductList" class="space-y-4">
+                        </div>
+                </div>
+                
+                <div id="adminCollaboratorsView" class="admin-tab-content hidden">
+                    <h3 class="text-2xl font-bold mb-6">User & Role Management</h3>
+                    <div id="collaboratorsList" class="space-y-4">
+                        </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+    
+    <div id="editProductModal" class="modal-overlay" onclick="if(event.target.id === 'editProductModal') hideEditModal()">
+        <div class="modal-content p-8">
+            <h3 class="text-2xl font-bold mb-6 border-b pb-2 text-gray-900" id="editProductNameTitle">Edit Product</h3>
+            <form id="editProductForm" class="space-y-4">
+                <input type="hidden" id="editProductId" value="">
+                
+                <div>
+                    <label for="editName" class="block text-sm font-medium text-gray-700">Name</label>
+                    <input type="text" id="editName" required class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 bg-secondary-bg">
+                </div>
+                
+                <div>
+                    <label for="editPrice" class="block text-sm font-medium text-gray-700">Price (UGX)</label>
+                    <input type="number" id="editPrice" required min="1000" class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 bg-secondary-bg">
+                </div>
+
+                <div>
+                    <label for="editCategory" class="block text-sm font-medium text-gray-700">Category</label>
+                    <select id="editCategory" required class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 bg-secondary-bg">
+                        <option value="Electronics">Electronics</option>
+                        <option value="Fashion">Fashion</option>
+                        <option value="Home Goods">Home Goods</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="editDescription" class="block text-sm font-medium text-gray-700">Description</label>
+                    <textarea id="editDescription" rows="3" required class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 bg-secondary-bg"></textarea>
+                </div>
+                
+                <div class="flex items-center space-x-6">
+                    <div>
+                        <label for="editStockStatus" class="block text-sm font-medium text-gray-700 mb-1">Stock Status</label>
+                        <select id="editStockStatus" required class="p-3 border border-gray-300 rounded-lg shadow-sm bg-secondary-bg">
+                            <option value="inStock">In Stock</option>
+                            <option value="lowStock">Low Stock</option>
+                            <option value="soldOut">Sold Out</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center mt-3">
+                        <input type="checkbox" id="editIsNew" class="h-4 w-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500">
+                        <label for="editIsNew" class="ml-2 block text-sm font-medium text-gray-700">New Product</label>
+                    </div>
+                     <div class="flex items-center mt-3">
+                        <input type="checkbox" id="editHasVideo" class="h-4 w-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500">
+                        <label for="editHasVideo" class="ml-2 block text-sm font-medium text-gray-700">Has Video</label>
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-4 space-x-3">
+                    <button type="button" onclick="hideEditModal()" class="bg-gray-300 text-gray-700 font-bold py-3 px-6 rounded-xl hover:bg-gray-400 transition-colors ripple-effect">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-teal-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-teal-700 transition-colors ripple-effect">
+                        <i class="fas fa-save mr-2"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="quickViewModal" class="modal-overlay" onclick="if(event.target.id === 'quickViewModal') hideQuickViewModal()">
+        <div class="modal-content p-8 max-w-2xl">
+            <button onclick="hideQuickViewModal()" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl"><i class="fas fa-times-circle"></i></button>
+            <div id="quickViewContent">
+                </div>
+        </div>
+    </div>
+
+<script>
+    // --- Utility Functions ---
+
+    // Function to format price with UGX currency
+    function formatPrice(price) {
+        // Ensures the price is a number and formats it without decimals (UGX is a high-value currency)
+        // We'll use the format "UGX 100,000"
+        return "UGX " + Math.round(price).toLocaleString('en-US'); 
+    }
+
+    // Ripple Effect Logic
+    function createRipple(event) {
+        const button = event.currentTarget;
+        const rect = button.getBoundingClientRect();
+        button.querySelectorAll('.ripple').forEach(ripple => ripple.remove());
+
+        const circle = document.createElement('span');
+        const diameter = Math.max(button.clientWidth, button.clientHeight);
+        const radius = diameter / 2;
+
+        circle.style.width = circle.style.height = `${diameter}px`;
+        circle.style.left = `${event.clientX - rect.left - radius}px`;
+        circle.style.top = `${event.clientY - rect.top - radius}px`;
+        circle.classList.add('ripple');
+
+        button.appendChild(circle);
+    }
+    
+    // Toast Notification System
+    function showToast(message, type = 'info', duration = 3000) {
+        if (!toastContainer) return;
+
+        const toast = document.createElement('div');
+        toast.classList.add('toast', `toast-${type}`);
+        
+        let iconHtml = '';
+        if (type === 'success') {
+            iconHtml = '<i class="fas fa-check-circle mr-3"></i>';
+        } else if (type === 'error') {
+            iconHtml = '<i class="fas fa-times-circle mr-3"></i>';
+        } else if (type === 'warning') {
+            iconHtml = '<i class="fas fa-exclamation-triangle mr-3"></i>';
+        } else {
+            iconHtml = '<i class="fas fa-info-circle mr-3"></i>';
+        }
+        
+        toast.innerHTML = `${iconHtml} <span>${message}</span>`;
+        
+        toastContainer.appendChild(toast);
+
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 50);
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, duration);
+    }
+
+    // Loading Indicator Controls
+    function showLoader() {
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'flex';
+        }
+    }
+
+    function hideLoader() {
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'none';
+        }
+    }
+    
+    // Admin ID Generator
+    function generateUniqueId(type = 'product') {
+        if (type === 'product') {
+            const maxId = products.reduce((max, product) => Math.max(max, product.id), 0);
+            return maxId + 1;
+        } else if (type === 'user') {
+             const maxId = users.reduce((max, user) => Math.max(max, user.id), 0);
+             return maxId + 1;
+        }
+        return Date.now();
+    }
+
+    // --- Data Mockup (Adjusted Prices for UGX scale) ---
+    // NOTE: Prices are scaled to realistic Ugandan Shillings (UGX) amounts.
+    let products = [
+        { id: 1, name: 'Wireless Noise-Cancelling Headphones', price: 740000, category: 'Electronics', image: 'https://images.unsplash.com/photo-1505740420928-5e560c06a244?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80', rating: 4.7, isNew: true, stockStatus: 'inStock', description: 'Experience unparalleled audio quality with active noise cancellation and a comfortable, ergonomic design.', 
+          reviews: [{user: 'Alex D.', rating: 5, comment: 'Best headphones I have ever owned!'}, {user: 'Sarah M.', rating: 4, comment: 'Great sound, but a bit pricey.'}], hasVideo: true, tag: 'featured' },
+        { id: 2, name: 'Vintage Leather Backpack', price: 295000, category: 'Fashion', image: 'https://images.unsplash.com/photo-1550009159-d8e7c1f8c1f0?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80', rating: 4.5, isNew: false, stockStatus: 'lowStock', description: 'A stylish, durable leather backpack perfect for daily commute or weekend travel.', 
+          reviews: [{user: 'Tom H.', rating: 5, comment: 'Perfect size and great quality leather.'}], hasVideo: false, tag: 'best-seller' },
+        { id: 3, name: 'Smart Home Hub 3.0', price: 1100000, category: 'Electronics', image: 'https://images.unsplash.com/photo-1594411130386-be67b5e40632?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80', rating: 4.9, isNew: true, stockStatus: 'inStock', description: 'The central brain for your smart home devices, offering seamless integration and voice control.', 
+          reviews: [{user: 'Dave G.', rating: 5, comment: 'Setup was a breeze, controls all my devices!'}, {user: 'Lena R.', rating: 5, comment: 'Absolutely essential for a modern home.'}], hasVideo: true, tag: 'featured' },
+        { id: 4, name: 'Minimalist Wooden Desk Lamp', price: 170000, category: 'Home Goods', image: 'https://images.unsplash.com/photo-1543884802-1bc8187803a6?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80', rating: 4.2, isNew: false, stockStatus: 'inStock', description: 'A sleek, modern desk lamp with an adjustable wooden arm and soft LED lighting.', 
+          reviews: [{user: 'Ben K.', rating: 4, comment: 'Looks great on my desk, subtle and modern.'}, {user: 'Mia T.', rating: 4, comment: 'Nice design, wish the cord was longer.'}], hasVideo: false, tag: '' },
+        { id: 5, name: 'Cotton Crew Neck T-Shirt', price: 92000, category: 'Fashion', image: 'https://images.unsplash.com/photo-1521572175240-5e60802c347b?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80', rating: 5.0, isNew: true, stockStatus: 'inStock', description: 'A classic, comfortable cotton tee in a variety of colors.', 
+          reviews: [{user: 'Jane A.', rating: 5, comment: 'Incredibly soft and fits true to size.'}], hasVideo: false, tag: 'featured' },
+        { id: 6, name: 'Classic Analog Watch', price: 445000, category: 'Fashion', image: 'https://images.unsplash.com/photo-1533139502638-269665979dcd?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80', rating: 4.6, isNew: false, stockStatus: 'lowStock', description: 'Timeless design with a stainless steel case and genuine leather strap.', 
+          reviews: [{user: 'Sam P.', rating: 5, comment: 'Elegant and reliable.'}], hasVideo: false, tag: 'best-seller' },
+        { id: 7, name: 'Ergonomic Office Chair', price: 1650000, category: 'Home Goods', image: 'https://images.unsplash.com/photo-1567538096236-fd6d8d742667?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80', rating: 4.8, isNew: false, stockStatus: 'inStock', description: 'Fully adjustable chair providing superior lumbar support for long hours.', 
+          reviews: [{user: 'Rick O.', rating: 5, comment: 'My back thanks me every day!'}, {user: 'Mona L.', rating: 4, comment: 'Very comfortable, assembly was simple.'}], hasVideo: true, tag: '' },
+        { id: 8, name: 'High-Speed USB-C Drive', price: 135000, category: 'Electronics', image: 'https://images.unsplash.com/photo-1621091218151-248792078652?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80', rating: 4.0, isNew: true, stockStatus: 'soldOut', description: 'Compact and fast storage solution with USB-C connectivity.', 
+          reviews: [{user: 'Chris A.', rating: 4, comment: 'Blazing fast transfer speeds.'}], hasVideo: false, tag: '' }
+    ];
+
+    let cartItems = [];
+    let appliedPromoCode = null; // New state variable for promo code
+    const SHIPPING_COST = 55000;
+    const TAX_RATE = 0.05; // 5% tax
+    const PROMO_CODES = {
+        'MOVING20': 0.20, // 20% off
+        'FREESHIP': 0.0, // Used to denote free shipping logic, but only discount is implemented here
+    };
+    
+    // User Data Mockup
+    let userData = {
+        name: 'Jane Doe',
+        email: 'jane.doe@example.com',
+        address: '123 E-Commerce Lane, App City, CA 90210',
+        avatar: 'https://i.pravatar.cc/150?img=1',
+        memberSince: 'Jan 15, 2023'
+    };
+    
+    // Wishlist Mockup (Stores product IDs)
+    let wishlistItems = JSON.parse(localStorage.getItem('movinResellersWishlist') || '[]');
+
+    // Order History Mockup (Added tracking details)
+    let orderHistory = [
+        { 
+            id: 'ORD-54321', date: 'Oct 1, 2024', total: 795000, status: 'Delivered',
+            tracking: [
+                { status: 'Order Placed', time: 'Oct 1, 10:00 AM' },
+                { status: 'Processing', time: 'Oct 1, 1:00 PM' },
+                { status: 'Shipped', time: 'Oct 2, 8:00 AM' },
+                { status: 'Out for Delivery', time: 'Oct 3, 7:00 AM' },
+                { status: 'Delivered', time: 'Oct 3, 11:30 AM' },
+            ]
+        },
+        { 
+            id: 'ORD-98765', date: 'Sep 20, 2024', total: 327000, status: 'Shipped',
+            tracking: [
+                { status: 'Order Placed', time: 'Sep 20, 10:00 AM' },
+                { status: 'Processing', time: 'Sep 20, 1:00 PM' },
+                { status: 'Shipped', time: 'Sep 21, 8:00 AM' },
+            ]
+        }
+    ];
+    
+    // New: Collaborator/User Mockup
+    let users = [
+        { id: 1, name: 'Jane Doe', email: 'jane.doe@example.com', role: 'Customer', memberSince: 'Jan 15, 2023', lastLogin: 'Today' },
+        { id: 2, name: 'Admin User', email: 'admin@movin.com', role: 'Admin', memberSince: 'Mar 1, 2024', lastLogin: 'Today' },
+        { id: 3, name: 'Alex Turyahabwe', email: 'alex@movin.com', role: 'Collaborator', memberSince: 'Apr 5, 2024', lastLogin: 'Yesterday' },
+        { id: 4, name: 'Sarah Musoke', email: 'sarah.m@test.com', role: 'Customer', memberSince: 'Sep 10, 2024', lastLogin: '3 days ago' },
+    ];
+
+
+    // --- DOM Elements --- 
+    const productGrid = document.getElementById('productGrid');
+    const cartCountElement = document.getElementById('cartCount');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const sortSelector = document.getElementById('sortSelector');
+    const maxPriceFilter = document.getElementById('maxPriceFilter');
+    const priceLabel = document.getElementById('priceLabel');
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = document.getElementById('themeIcon');
+    const adminPasswordInput = document.getElementById('adminPassword');
+    const adminLoginButton = document.getElementById('adminLoginButton');
+    const adminLoginForm = document.getElementById('adminLoginForm');
+    const adminContent = document.getElementById('adminContent');
+    const loginMessage = document.getElementById('loginMessage');
+    const editProductModal = document.getElementById('editProductModal');
+    const editProductForm = document.getElementById('editProductForm');
+    const cartSummaryPopup = document.getElementById('cartSummaryPopup');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const toastContainer = document.getElementById('toastContainer');
+    const quickViewModal = document.getElementById('quickViewModal');
+    const ADMIN_PASSWORD = 'supersecret';
+
+    // --- NEW SECURITY CONSTANTS & HELPERS FOR ADMIN PORTAL ---
+    const ADMIN_TOKEN_KEY = 'adminAuthToken';
+    const TOKEN_EXPIRATION_HOURS = 1; // Token expires after 1 hour
+
+    function saveWishlistToStorage() {
+        localStorage.setItem('movinResellersWishlist', JSON.stringify(wishlistItems));
+    }
+    
+    function generateAuthToken() {
+        // Generates a simple time-stamped, Base64-encoded token (simulating a JWT)
+        const expiration = Date.now() + (TOKEN_EXPIRATION_HOURS * 60 * 60 * 1000);
+        const payload = {
+            userId: 'admin',
+            exp: expiration, // Expiration time in milliseconds
+        };
+        // Base64 encode the JSON payload
+        const tokenPayload = btoa(JSON.stringify(payload));
+        // Full token structure (header.payload.signature)
+        return `header.${tokenPayload}.signature`; 
+    }
+
+    function isTokenValid(token) {
+        if (!token) return false;
+        try {
+            // Decode the payload part (index 1)
+            const payloadBase64 = token.split('.')[1];
+            const payloadJson = atob(payloadBase64);
+            const payload = JSON.parse(payloadJson);
+
+            // Check if the token has expired
+            if (payload.exp && payload.exp < Date.now()) {
+                localStorage.removeItem(ADMIN_TOKEN_KEY); // Clear expired token
+                showToast('Admin session expired. Please log in again.', 'warning');
+                return false;
+            }
+
+            // Token is present and not expired
+            return true;
+        } catch (e) {
+            // Catch invalid token format (tampering simulation)
+            localStorage.removeItem(ADMIN_TOKEN_KEY);
+            console.error('Invalid token format or JSON:', e);
+            return false;
+        }
+    }
+    // -----------------------------------------------------------
+
+    // --- Theming ---
+    function toggleTheme() {
+        if (document.documentElement.getAttribute('data-theme') === 'dark') {
+            document.documentElement.removeAttribute('data-theme');
+            localStorage.setItem('theme', 'light');
+            themeIcon.classList.remove('fa-sun', 'text-yellow-500');
+            themeIcon.classList.add('fa-moon');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            localStorage.setItem('theme', 'dark');
+            themeIcon.classList.remove('fa-moon');
+            themeIcon.classList.add('fa-sun', 'text-yellow-500');
+        }
+    }
+
+    // --- Section Switching ---
+    const allSections = document.querySelectorAll('.app-section');
+    const allTabs = document.querySelectorAll('.tab-button');
+
+    function showSection(sectionId) {
+        allSections.forEach(section => {
+            section.style.display = 'none';
+        });
+        allTabs.forEach(tab => {
+            if (tab.dataset.target === sectionId) {
+                tab.classList.add('active');
+            } else {
+                tab.classList.remove('active');
+            }
+        });
+        const targetSection = document.getElementById(sectionId);
+        if (targetSection) {
+            targetSection.style.display = 'block';
+            window.scrollTo(0, 0); // Scroll to top when changing section
+        }
+
+        if (sectionId === 'cart') {
+            renderCart();
+        } else if (sectionId === 'profile') {
+            renderProfile();
+        } else if (sectionId === 'admin') {
+            // NOTE: The showSection interceptor at the end of the script handles admin login check
+        }
+        
+        // Hide modals when switching sections
+        hideQuickViewModal();
+    }
+
+    // --- Product Card Rendering ---
+    function createProductCard(product) {
+        const productCard = document.createElement('div');
+        productCard.classList.add('product-card', 'bg-white', 'rounded-2xl', 'shadow-xl', 'overflow-hidden', 'transition-transform', 'hover:scale-[1.02]', 'duration-300', 'border', 'border-gray-100', 'relative');
+        productCard.dataset.id = product.id;
+
+        const fullStars = Math.floor(product.rating);
+        const hasHalfStar = product.rating % 1 !== 0;
+        const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+        const reviewCount = product.reviews ? product.reviews.length : 0;
+        const isInWishlist = wishlistItems.includes(product.id);
+        
+        let badgeHtml = '';
+        if (product.tag === 'featured') {
+             badgeHtml = '<span class="absolute top-3 right-3 bg-yellow-500 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-md z-10"><i class="fas fa-star mr-1"></i> FEATURED</span>';
+        } else if (product.isNew) {
+            badgeHtml = '<span class="absolute top-3 right-3 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded-full shadow-md z-10">NEW</span>';
+        }
+
+        let buttonContent = `<i class="fas fa-cart-plus mr-2"></i> Add to Cart`;
+        let buttonDisabled = '';
+        let buttonClass = 'bg-teal-600 hover:bg-teal-700';
+
+        if (product.stockStatus === 'soldOut') {
+            buttonContent = `<i class="fas fa-ban mr-2"></i> Sold Out`;
+            buttonDisabled = 'disabled';
+            buttonClass = 'bg-gray-400 cursor-not-allowed';
+        } else if (product.stockStatus === 'lowStock') {
+            buttonContent = `<i class="fas fa-exclamation-triangle mr-2"></i> Low Stock`;
+            buttonClass = 'bg-orange-500 hover:bg-orange-600';
+        }
+
+        productCard.innerHTML = `
+            <div class="relative">
+                <img src="${product.image}" alt="${product.name}" class="w-full h-48 object-cover product-image" onclick="showProductDetails(${product.id})">
+                ${badgeHtml}
+                <div class="absolute bottom-2 left-2 flex space-x-2">
+                    <button onclick="toggleWishlist(event, ${product.id})" class="text-xl p-1 rounded-full shadow-lg transition-colors z-10 ${isInWishlist ? 'text-red-500 bg-white' : 'text-gray-400 bg-white/80 hover:text-red-500'}" title="Add to Wishlist">
+                        <i class="fas fa-heart"></i>
+                    </button>
+                    <button onclick="showQuickViewModal(${product.id})" class="text-sm bg-white text-gray-700 font-semibold px-3 py-1 rounded-full shadow-lg hover:bg-gray-200 transition-colors z-10" title="Quick View">
+                        <i class="fas fa-eye mr-1"></i> Quick View
+                    </button>
+                    ${product.hasVideo ? '<span class="text-sm bg-blue-500 text-white font-semibold px-2 py-1 rounded-full shadow-lg z-10"><i class="fas fa-video"></i></span>' : ''}
+                </div>
+            </div>
+            <div class="p-4 flex flex-col justify-between h-56">
+                <div>
+                    <span class="text-xs font-semibold text-gray-500">${product.category}</span>
+                    <h3 class="font-bold text-lg cursor-pointer hover:text-teal-600 transition-colors mt-1" onclick="showProductDetails(${product.id})">${product.name}</h3>
+                    <div class="flex items-center mt-2">
+                        <span class="star-rating text-yellow-500 text-sm mr-2">
+                            ${'★'.repeat(fullStars)}
+                            ${hasHalfStar ? '<i class="fas fa-star-half-alt"></i>' : ''}
+                            ${'☆'.repeat(emptyStars)}
+                        </span>
+                        <span class="text-xs text-gray-500">(${product.rating}) / ${reviewCount} reviews</span>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <p class="text-2xl font-extrabold text-gray-900 mb-3">${formatPrice(product.price)}</p>
+                    <button class="w-full text-white font-bold py-2 rounded-lg transition-colors ripple-effect ${buttonClass}" 
+                        onclick="addToCart(event, ${product.id})" ${buttonDisabled}>
+                        ${buttonContent}
+                    </button>
+                </div>
+            </div>
+        `;
+        return productCard;
+    }
+
+    function renderProducts(productsToRender) {
+        if (!productGrid) return;
+        productGrid.innerHTML = '';
+        if (productsToRender.length === 0) {
+            productGrid.innerHTML = `<p class="col-span-full text-center text-gray-500 py-10">No products found matching your filters.</p>`;
+            return;
+        }
+        productsToRender.forEach(product => {
+            const productCard = createProductCard(product);
+            productGrid.appendChild(productCard);
+        });
+    }
+    
+    // --- Wishlist Logic ---
+    function toggleWishlist(event, productId) {
+        event.stopPropagation();
+        const index = wishlistItems.indexOf(productId);
+        
+        if (index > -1) {
+            wishlistItems.splice(index, 1);
+            showToast('Removed from Wishlist.', 'info', 2000);
+        } else {
+            wishlistItems.push(productId);
+            showToast('Added to Wishlist!', 'success', 2000);
+        }
+        
+        saveWishlistToStorage();
+        applyFiltersAndSort(); // Re-render product grid to update heart icon
+        renderWishlist();
+        renderAdminDashboard(); // Update admin metrics
+    }
+    
+    // --- Quick View Modal ---
+    function showQuickViewModal(productId) {
+        const product = products.find(p => p.id === productId);
+        const modalContent = document.getElementById('quickViewContent');
+        
+        if (!product) return;
+
+        // Calculate current rating stars
+        const fullStars = Math.floor(product.rating);
+        const hasHalfStar = product.rating % 1 !== 0;
+        const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+        const starHtml = `
+            <span class="star-rating text-yellow-500 text-xl mr-2">
+                ${'★'.repeat(fullStars)}
+                ${hasHalfStar ? '<i class="fas fa-star-half-alt"></i>' : ''}
+                ${'☆'.repeat(emptyStars)}
+            </span>
+        `;
+        
+        let buttonClass = product.stockStatus === 'soldOut' ? 'bg-gray-400 cursor-not-allowed' : 'bg-teal-600 hover:bg-teal-700';
+        let buttonDisabled = product.stockStatus === 'soldOut' ? 'disabled' : '';
+
+        modalContent.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                <div>
+                    <img src="${product.image}" alt="${product.name}" class="w-full h-auto object-cover rounded-lg shadow-md">
+                    ${product.hasVideo ? '<div class="mt-2 text-blue-500 font-semibold"><i class="fas fa-video mr-1"></i> Product Video Available</div>' : ''}
+                </div>
+                <div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">${product.name}</h3>
+                    <div class="flex items-center mb-3">
+                        ${starHtml}
+                        <span class="text-md font-semibold text-gray-700">${product.rating} / 5.0</span>
+                    </div>
+                    <p class="text-3xl font-extrabold text-teal-600 mb-4">${formatPrice(product.price)}</p>
+                    <p class="text-gray-700 text-sm mb-4 line-clamp-3">${product.description}</p>
+
+                    <div class="flex space-x-2 mb-6">
+                        <span class="text-sm font-semibold px-3 py-1 rounded-full bg-gray-200">${product.category}</span>
+                        <span class="text-sm font-semibold px-3 py-1 rounded-full ${product.stockStatus === 'inStock' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${product.stockStatus.toUpperCase()}</span>
+                    </div>
+
+                    <button class="w-full text-white font-bold py-3 rounded-lg transition-colors ripple-effect ${buttonClass}" 
+                        onclick="addToCart(event, ${product.id}); hideQuickViewModal();" ${buttonDisabled}>
+                        <i class="fas fa-cart-plus mr-2"></i> ${product.stockStatus === 'soldOut' ? 'Sold Out' : 'Add to Cart'}
+                    </button>
+                    <button onclick="showProductDetails(${product.id});" class="w-full mt-2 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition-colors ripple-effect">
+                        View Full Details
+                    </button>
+                </div>
+            </div>
+        `;
+        quickViewModal.style.display = 'flex';
+    }
+
+    function hideQuickViewModal() {
+        quickViewModal.style.display = 'none';
+    }
+
+
+    // --- Product Interactions ---
+    function renderReviewsList(reviews) {
+        // ... (Reviews List function remains the same)
+        if (!reviews || reviews.length === 0) {
+            return '<p class="text-gray-500">Be the first to leave a review!</p>';
+        }
+        let reviewsHtml = '';
+        reviews.forEach(review => {
+            const reviewStars = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+            reviewsHtml += `
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-border-color">
+                    <div class="flex items-center justify-between">
+                        <p class="font-bold text-gray-800">${review.user}</p>
+                        <span class="star-rating text-yellow-500 text-sm">${reviewStars}</span>
+                    </div>
+                    <p class="text-gray-700 mt-2">${review.comment}</p>
+                </div>
+            `;
+        });
+        return reviewsHtml;
+    }
+
+    function renderReviewForm(productId) {
+        // ... (Review Form function remains the same)
+        const container = document.getElementById('reviewFormContainer');
+        if (!container) return;
+
+        const reviewerName = userData.name;
+        
+        container.innerHTML = `
+            <form id="reviewSubmissionForm" data-product-id="${productId}" class="bg-white p-6 rounded-xl shadow-md border border-border-color space-y-4">
+                <p class="text-gray-700">Reviewing as: <span class="font-bold text-teal-600">${reviewerName}</span></p>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Your Rating</label>
+                    <div id="starRatingInput" class="flex text-3xl text-gray-300">
+                        <span class="hover:text-yellow-500 cursor-pointer transition-colors" data-rating="1">★</span>
+                        <span class="hover:text-yellow-500 cursor-pointer transition-colors" data-rating="2">★</span>
+                        <span class="hover:text-yellow-500 cursor-pointer transition-colors" data-rating="3">★</span>
+                        <span class="hover:text-yellow-500 cursor-pointer transition-colors" data-rating="4">★</span>
+                        <span class="hover:text-yellow-500 cursor-pointer transition-colors" data-rating="5">★</span>
+                    </div>
+                    <input type="hidden" id="reviewRating" value="0">
+                    <p id="ratingError" class="error-text hidden">Please select a rating.</p>
+                </div>
+                
+                <div>
+                    <label for="reviewComment" class="block text-sm font-medium text-gray-700">Your Comment</label>
+                    <textarea id="reviewComment" rows="4" class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-3 bg-secondary-bg" placeholder="Share your experience... (min 10 characters)"></textarea>
+                    <p id="commentError" class="error-text hidden">Comment must be at least 10 characters long.</p>
+                </div>
+
+                <button type="submit" class="w-full bg-teal-600 text-white font-bold py-3 rounded-xl hover:bg-teal-700 transition-colors ripple-effect">
+                    <i class="fas fa-comment-dots mr-2"></i> Submit Review
+                </button>
+            </form>
+        `;
+
+        let selectedRating = 0;
+        const stars = document.querySelectorAll('#starRatingInput span');
+        const ratingInput = document.getElementById('reviewRating');
+
+        stars.forEach(star => {
+            star.addEventListener('click', (e) => {
+                selectedRating = parseInt(e.target.dataset.rating);
+                ratingInput.value = selectedRating;
+                stars.forEach((s, index) => {
+                    if (index < selectedRating) {
+                        s.style.color = 'gold';
+                    } else {
+                        s.style.color = '';
+                    }
+                });
+            });
+            star.addEventListener('mouseenter', (e) => {
+                const hoverRating = parseInt(e.target.dataset.rating);
+                stars.forEach((s, index) => {
+                    if (index < hoverRating) {
+                        s.style.color = 'orange';
+                    } else if (index < selectedRating) {
+                        s.style.color = 'gold';
+                    } else {
+                        s.style.color = '';
+                    }
+                });
+            });
+            star.addEventListener('mouseleave', () => {
+                stars.forEach((s, index) => {
+                    if (index < selectedRating) {
+                        s.style.color = 'gold';
+                    } else {
+                        s.style.color = '';
+                    }
+                });
+            });
+        });
+
+        document.getElementById('reviewSubmissionForm').addEventListener('submit', submitReview);
+    }
+
+    function submitReview(event) {
+        // ... (Submit Review function remains the same)
+        event.preventDefault();
+        const form = event.target;
+        const productId = parseInt(form.dataset.productId);
+        const rating = parseInt(document.getElementById('reviewRating').value);
+        const comment = document.getElementById('reviewComment').value.trim();
+        const reviewer = userData.name;
+        
+        // --- 1. Validation ---
+        let hasError = false;
+        document.getElementById('ratingError').classList.add('hidden');
+        document.getElementById('commentError').classList.add('hidden');
+
+        if (rating === 0) {
+            document.getElementById('ratingError').classList.remove('hidden');
+            hasError = true;
+        }
+        if (comment.length < 10) {
+            document.getElementById('commentError').classList.remove('hidden');
+            hasError = true;
+        }
+        if (hasError) {
+            showToast("Please fix the errors in your review form.", 'error', 3000);
+            return;
+        }
+
+        // --- 2. Update Product Data ---
+        const productIndex = products.findIndex(p => p.id === productId);
+        if (productIndex === -1) return;
+        const product = products[productIndex];
+        
+        const newReview = { user: reviewer, rating: rating, comment: comment };
+        if (!product.reviews) product.reviews = [];
+        product.reviews.push(newReview);
+
+        // --- 3. Recalculate Average Rating ---
+        const totalRating = product.reviews.reduce((sum, review) => sum + review.rating, 0);
+        const newAverage = totalRating / product.reviews.length;
+        product.rating = parseFloat(newAverage.toFixed(1));
+
+        // --- 4. Refresh UI and Provide Feedback ---
+        showProductDetails(productId);
+        applyFiltersAndSort();
+        showToast("Thank you! Your review has been submitted.", 'success');
+    }
+
+    function showProductDetails(productId) {
+        // ... (Show Product Details function remains the same)
+        const product = products.find(p => p.id === productId);
+        const detailContainer = document.getElementById('productDetailContent');
+
+        if (!product) {
+            detailContainer.innerHTML = '<p class="text-center text-red-500 py-10">Product Not Found!</p>';
+            showSection('productDetail');
+            return;
+        }
+
+        // Calculate current rating stars
+        const fullStars = Math.floor(product.rating);
+        const hasHalfStar = product.rating % 1 !== 0;
+        const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+        const starHtml = `
+            <span class="star-rating text-yellow-500 text-xl mr-2">
+                ${'★'.repeat(fullStars)}
+                ${hasHalfStar ? '<i class="fas fa-star-half-alt"></i>' : ''}
+                ${'☆'.repeat(emptyStars)}
+            </span>
+        `;
+        const reviewCount = product.reviews ? product.reviews.length : 0;
+        
+        let buttonContent = `<i class="fas fa-cart-plus mr-2"></i> Add to Cart`;
+        let buttonDisabled = '';
+        let buttonClass = 'bg-teal-600 hover:bg-teal-700';
+
+        if (product.stockStatus === 'soldOut') {
+            buttonContent = `<i class="fas fa-ban mr-2"></i> Sold Out`;
+            buttonDisabled = 'disabled';
+            buttonClass = 'bg-gray-400 cursor-not-allowed';
+        } else if (product.stockStatus === 'lowStock') {
+            buttonContent = `<i class="fas fa-exclamation-triangle mr-2"></i> Low Stock`;
+            buttonClass = 'bg-orange-500 hover:bg-orange-600';
+        }
+        
+        const isProductInWishlist = wishlistItems.includes(product.id);
+        const wishlistIconClass = isProductInWishlist ? 'fas text-red-500' : 'far text-gray-500 hover:text-red-500';
+
+        detailContainer.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="relative">
+                    <img src="${product.image}" alt="${product.name}" class="w-full h-96 object-cover rounded-xl shadow-lg">
+                    ${product.isNew ? '<span class="absolute top-3 left-3 bg-red-500 text-white text-md font-semibold px-3 py-1 rounded-full shadow-md">NEW</span>' : ''}
+                    ${product.hasVideo ? '<span class="absolute top-3 right-3 bg-blue-500 text-white text-md font-semibold px-3 py-1 rounded-full shadow-md"><i class="fas fa-video mr-1"></i> VIDEO</span>' : ''}
+                </div>
+                <div>
+                    <span class="text-md font-semibold text-gray-500">${product.category}</span>
+                    <h1 class="text-4xl font-extrabold text-gray-900 mt-2">${product.name}</h1>
+                    <div class="flex items-center mt-3 mb-4">
+                        ${starHtml}
+                        <span class="text-md font-semibold text-gray-700">${product.rating} / 5.0</span>
+                        <span class="text-gray-500 ml-4">(${reviewCount} reviews)</span>
+                        <button onclick="toggleWishlist(event, ${product.id})" class="ml-4 text-2xl" title="Wishlist">
+                            <i class="${wishlistIconClass} fa-heart"></i>
+                        </button>
+                    </div>
+                    <p class="text-gray-700 text-lg mb-6">${product.description}</p>
+                    
+                    <div class="flex items-end justify-between border-t border-b py-4 mb-6 border-border-color">
+                        <span class="text-4xl font-extrabold text-teal-600">${formatPrice(product.price)}</span>
+                        <span class="text-lg font-semibold text-green-600">${product.stockStatus === 'inStock' ? 'In Stock' : (product.stockStatus === 'lowStock' ? 'Low Stock!' : 'Sold Out')}</span>
+                    </div>
+
+                    <button class="w-full text-white font-bold py-3 rounded-xl transition-colors ripple-effect text-lg ${buttonClass}" 
+                        onclick="addToCart(event, ${product.id})" ${buttonDisabled}>
+                        ${buttonContent}
+                    </button>
+                </div>
+            </div>
+            <div id="reviewFormContainer" class="mt-12 pt-8 border-t border-border-color">
+            </div>
+            <div id="reviewsSection" class="mt-12 pt-8 border-t border-border-color">
+                <h2 class="text-2xl font-bold mb-6 text-gray-900">Customer Reviews (${reviewCount})</h2>
+                <div id="productReviewsList" class="space-y-4">
+                    ${renderReviewsList(product.reviews)}
+                </div>
+            </div>
+        `;
+
+        renderReviewForm(productId);
+        showSection('productDetail');
+    }
+
+    // Add to Cart
+    function addToCart(event, productId) {
+        event.stopPropagation();
+        const productToAdd = products.find(p => p.id === productId);
+
+        if (!productToAdd || productToAdd.stockStatus === 'soldOut') return;
+
+        // --- 1. Perform Animation ---
+        const button = event.currentTarget;
+        const productCard = button.closest('.product-card') || button.closest('#productDetailContent') || button.closest('#quickViewContent');
+        const imageElement = productCard.querySelector('img');
+
+        if (imageElement) {
+            const rect = imageElement.getBoundingClientRect();
+            const flyingImage = imageElement.cloneNode();
+            flyingImage.classList.add('flying-image');
+            Object.assign(flyingImage.style, {
+                top: `${rect.top}px`,
+                left: `${rect.left}px`,
+                width: `${rect.width}px`,
+                height: `${rect.height}px`
+            });
+            document.body.appendChild(flyingImage);
+
+            setTimeout(() => {
+                flyingImage.style.top = '20px';
+                flyingImage.style.left = `${window.innerWidth - 80}px`;
+            }, 10);
+
+            setTimeout(() => {
+                flyingImage.remove();
+                cartCountElement.closest('.tab-button').classList.add('cart-hit-animation');
+                setTimeout(() => {
+                    cartCountElement.closest('.tab-button').classList.remove('cart-hit-animation');
+                }, 500);
+            }, 800);
+        }
+
+        // --- 2. Update Cart Data and UI ---
+        const existingItem = cartItems.find(item => item.id === productId);
+        if (existingItem) {
+            existingItem.quantity += 1;
+        } else {
+            cartItems.push({ ...productToAdd, quantity: 1 });
+        }
+
+        updateCartCount();
+        showToast(`Added ${productToAdd.name} to cart.`, 'success', 2000);
+    }
+
+    // --- Filtering and Sorting ---
+    function updatePriceLabel() {
+        // ... (Filter/Sort functions remain the same)
+        const sliderMax = 4000000;
+        const sliderValue = parseFloat(maxPriceFilter.value); // Value from 1 to 1000
+        const maxPrice = (sliderValue / 1000) * sliderMax; // Scale 1-1000 to 1 - 4M
+
+        priceLabel.textContent = formatPrice(maxPrice);
+        applyFiltersAndSort();
+    }
+
+    function applyQuickCategoryFilter(category) {
+        document.getElementById('categoryFilter').value = category;
+        // Reset the quick status filters when category changes
+        document.querySelectorAll('#quickFilters button').forEach(btn => btn.classList.remove('active', 'bg-teal-600', 'text-white'));
+        document.getElementById(`filter-${category === 'all' ? 'all' : 'all'}`).classList.add('active', 'bg-teal-600', 'text-white');
+        applyFiltersAndSort();
+    }
+
+    function applyQuickStatusFilter(status) {
+        // Only set the filter state, then re-apply all filters/sorts
+        // Reset category selector to 'all' if a status filter is used
+        document.getElementById('categoryFilter').value = 'all'; 
+
+        // Update the active state of quick filters
+        document.querySelectorAll('#quickFilters button').forEach(btn => btn.classList.remove('active', 'bg-teal-600', 'text-white'));
+        document.getElementById(`filter-${status}`).classList.add('active', 'bg-teal-600', 'text-white');
+        
+        applyFiltersAndSort(status);
+    }
+
+    function applyFiltersAndSort(statusFilter = null) {
+        // ... (Filter/Sort functions remain the same)
+        // Determine the category filter
+        const selectedCategory = categoryFilter.value;
+        const selectedSort = sortSelector.value;
+        
+        // Determine the max price filter
+        const sliderMax = 4000000;
+        const sliderValue = parseFloat(maxPriceFilter.value);
+        const maxPrice = (sliderValue / 1000) * sliderMax;
+
+        // Reset quick filters active state, except for the one currently active
+        // This is primarily for when the dropdowns are used, ensuring the active quick filter button is visually correct
+        if (!statusFilter) {
+             document.querySelectorAll('#quickFilters button').forEach(btn => btn.classList.remove('active', 'bg-teal-600', 'text-white'));
+             const activeCatBtn = document.getElementById(`filter-${selectedCategory}`) || document.getElementById(`filter-all`);
+             if (activeCatBtn) {
+                 activeCatBtn.classList.add('active');
+                 activeCatBtn.classList.add('bg-teal-600', 'text-white');
+             }
+        }
+
+        let filtered = products.filter(product => {
+            const categoryMatch = selectedCategory === 'all' || product.category === selectedCategory;
+            const priceMatch = product.price <= maxPrice;
+            let statusMatch = true; // Default
+
+            if (statusFilter === 'new') {
+                statusMatch = product.isNew;
+            } else if (statusFilter === '5star') {
+                statusMatch = product.rating >= 5.0;
+            } else if (statusFilter === 'under50') {
+                statusMatch = product.price < 200000;
+            } else if (statusFilter) {
+                 // For when a quick filter button is clicked
+                 statusMatch = document.getElementById(`filter-${statusFilter}`).classList.contains('active');
+            }
+            // If we are using the category/price dropdowns, we only want the category and price match
+            if (!statusFilter && document.querySelector('#quickFilters button.active') && document.querySelector('#quickFilters button.active').id !== 'filter-all') {
+                // If a status button is active, let's re-run the filter based on the active button
+                const activeStatusId = document.querySelector('#quickFilters button.active').id;
+                const activeStatus = activeStatusId.replace('filter-', '');
+                if (activeStatus === 'new') {
+                    statusMatch = product.isNew;
+                } else if (activeStatus === '5star') {
+                    statusMatch = product.rating >= 5.0;
+                } else if (activeStatus === 'under50') {
+                    statusMatch = product.price < 200000;
+                }
+            }
+
+
+            return categoryMatch && priceMatch && statusMatch;
+        });
+
+        // Sorting
+        if (selectedSort === 'priceAsc') {
+            filtered.sort((a, b) => a.price - b.price);
+        } else if (selectedSort === 'priceDesc') {
+            filtered.sort((a, b) => b.price - a.price);
+        } else if (selectedSort === 'ratingDesc') {
+            filtered.sort((a, b) => b.rating - a.rating);
+        }
+
+        renderProducts(filtered);
+    }
+
+    // --- Cart Logic ---
+    function saveCartToStorage() {
+        localStorage.setItem('movinResellersCart', JSON.stringify(cartItems));
+    }
+
+    function loadCartFromStorage() {
+        const savedCart = localStorage.getItem('movinResellersCart');
+        if (savedCart) {
+            cartItems = JSON.parse(savedCart);
+        }
+    }
+
+    function calculateCartTotals() {
+        let itemCount = 0;
+        let subtotal = 0;
+        
+        cartItems.forEach(item => {
+            itemCount += item.quantity;
+            subtotal += item.price * item.quantity;
+        });
+
+        // 1. Calculate Tax
+        const tax = subtotal * TAX_RATE;
+        
+        // 2. Calculate Discount
+        let discount = 0;
+        if (appliedPromoCode && PROMO_CODES[appliedPromoCode]) {
+            discount = subtotal * PROMO_CODES[appliedPromoCode];
+        }
+
+        // 3. Calculate Final Total
+        const totalBeforeShipping = subtotal + tax - discount;
+        const total = totalBeforeShipping + SHIPPING_COST;
+        
+        return { itemCount, subtotal, tax, discount, total };
+    }
+
+    function updateCartCount() {
+        const { itemCount, subtotal, tax, discount, total } = calculateCartTotals();
+        cartCountElement.textContent = itemCount;
+
+        // Update Cart Section Totals
+        const subtotalEl = document.getElementById('cartSubtotal');
+        const totalEl = document.getElementById('cartTotal');
+        const itemCountDisplayEl = document.getElementById('cartItemCountDisplay');
+        const taxEl = document.getElementById('cartTax');
+        const discountEl = document.getElementById('cartDiscount');
+        const discountLine = document.getElementById('discountLine');
+        
+        if (subtotalEl) subtotalEl.textContent = formatPrice(subtotal);
+        if (totalEl) totalEl.textContent = formatPrice(total);
+        if (itemCountDisplayEl) itemCountDisplayEl.textContent = itemCount;
+        
+        // NEW: Tax and Discount
+        if (taxEl) taxEl.textContent = formatPrice(tax);
+        if (discountEl) discountEl.textContent = `- ${formatPrice(discount)}`;
+        if (discountLine) discountLine.classList.toggle('hidden', discount === 0);
+
+        saveCartToStorage();
+        renderCartSummary();
+    }
+    
+    // NEW: Apply Promo Code
+    function applyPromoCode() {
+        const input = document.getElementById('promoCodeInput');
+        const code = input.value.toUpperCase().trim();
+        
+        if (code === '') {
+            appliedPromoCode = null;
+            updateCartCount();
+            showToast('Promo code cleared.', 'info');
+            return;
+        }
+
+        if (PROMO_CODES[code]) {
+            appliedPromoCode = code;
+            input.disabled = true;
+            input.classList.remove('border-gray-300');
+            input.classList.add('bg-green-100', 'border-green-500');
+            updateCartCount();
+            showToast(`Promo code "${code}" applied successfully!`, 'success');
+        } else {
+            appliedPromoCode = null;
+            input.classList.remove('bg-green-100', 'border-green-500');
+            input.classList.add('border-red-500');
+            updateCartCount();
+            showToast('Invalid promo code. Try MOVING20.', 'error');
+        }
+    }
+
+
+    function changeQuantity(productId, delta) {
+        const item = cartItems.find(i => i.id === productId);
+        if (!item) return;
+
+        item.quantity += delta;
+        if (item.quantity <= 0) {
+            removeItem(productId);
+        } else {
+            updateCartCount();
+            renderCart();
+        }
+    }
+
+    function removeItem(productId) {
+        cartItems = cartItems.filter(item => item.id !== productId);
+        updateCartCount();
+        renderCart();
+        showToast('Item removed from cart.', 'info', 2000);
+    }
+
+    function renderCart() {
+        // ... (Render Cart function remains the same)
+        const cartList = document.getElementById('cartItemsList');
+        const emptyMessage = document.getElementById('emptyCartMessage');
+        const promoInput = document.getElementById('promoCodeInput');
+
+        if (!cartList || !emptyMessage || !promoInput) return;
+
+        if (cartItems.length === 0) {
+            cartList.innerHTML = '';
+            emptyMessage.classList.remove('hidden');
+            appliedPromoCode = null; // Clear promo code if cart is emptied
+            promoInput.value = '';
+            promoInput.disabled = false;
+        } else {
+            emptyMessage.classList.add('hidden');
+        }
+        
+        if (appliedPromoCode) {
+             promoInput.value = appliedPromoCode;
+             promoInput.disabled = true;
+             promoInput.classList.add('bg-green-100', 'border-green-500');
+        } else {
+             promoInput.disabled = false;
+             promoInput.classList.remove('bg-green-100', 'border-green-500');
+             promoInput.classList.add('border-gray-300');
+        }
+
+        cartList.innerHTML = cartItems.map(item => `
+            <div class="flex items-center bg-secondary-bg p-4 rounded-xl shadow-md border border-border-color">
+                <img src="${item.image}" alt="${item.name}" class="w-20 h-20 object-cover rounded-lg mr-4">
+                <div class="flex-grow">
+                    <p class="font-bold text-lg text-gray-900">${item.name}</p>
+                    <p class="text-sm text-gray-500">${formatPrice(item.price)} each</p>
+                    <p class="font-semibold text-teal-600">${formatPrice(item.price * item.quantity)}</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="changeQuantity(${item.id}, -1)" class="bg-gray-200 text-gray-700 w-8 h-8 rounded-full hover:bg-gray-300 transition-colors ripple-effect">-</button>
+                    <span class="font-bold text-lg w-6 text-center">${item.quantity}</span>
+                    <button onclick="changeQuantity(${item.id}, 1)" class="bg-teal-600 text-white w-8 h-8 rounded-full hover:bg-teal-700 transition-colors ripple-effect">+</button>
+                </div>
+                <button onclick="removeItem(${item.id})" class="ml-4 text-red-500 hover:text-red-700 transition-colors">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+
+    function renderCartSummary() {
+        const { itemCount, total } = calculateCartTotals();
+        const itemsContainer = document.getElementById('cartSummaryItems');
+        document.getElementById('summaryItemCount').textContent = itemCount;
+        document.getElementById('summaryTotal').textContent = formatPrice(total);
+
+        if (cartItems.length === 0) {
+            itemsContainer.innerHTML = '<p class="text-gray-500 italic">Your cart is empty.</p>';
+            return;
+        }
+
+        itemsContainer.innerHTML = cartItems.slice(0, 3).map(item => `
+            <div class="flex justify-between items-center">
+                <span class="truncate pr-2">${item.quantity}x ${item.name}</span>
+                <span class="font-medium">${formatPrice(item.price * item.quantity)}</span>
+            </div>
+        `).join('');
+
+        if (cartItems.length > 3) {
+            itemsContainer.innerHTML += `<p class="text-center text-xs text-teal-600 pt-1">+ ${cartItems.length - 3} more items</p>`;
+        }
+    }
+
+    function showCartSummary() {
+        if (!cartSummaryPopup) return;
+        renderCartSummary();
+        cartSummaryPopup.classList.remove('opacity-0', 'pointer-events-none');
+        cartSummaryPopup.classList.add('opacity-100');
+    }
+
+    function hideCartSummary() {
+        if (!cartSummaryPopup) return;
+        setTimeout(() => {
+            cartSummaryPopup.classList.remove('opacity-100');
+            cartSummaryPopup.classList.add('opacity-0', 'pointer-events-none');
+        }, 100);
+    }
+
+    // Checkout Logic
+    function processCheckout() {
+        if (cartItems.length === 0) {
+            showToast("Your cart is empty! Add items before checking out.", 'info');
+            return;
+        }
+
+        showLoader();
+        
+        // Simulate a network delay for checkout
+        setTimeout(() => {
+            hideLoader();
+            const { total } = calculateCartTotals();
+            
+            // Generate tracking steps for a new order
+            const trackingSteps = [
+                { status: 'Order Placed', time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) },
+                { status: 'Processing', time: new Date(Date.now() + 3600000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) }, // +1 hour
+                { status: 'Confirmed', time: new Date(Date.now() + 7200000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) }, // +2 hours
+            ];
+
+            // Create a new order object
+            const newOrder = {
+                id: `ORD-${Date.now().toString().slice(-6)}`,
+                date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                total: total,
+                status: 'Confirmed',
+                items: JSON.parse(JSON.stringify(cartItems)), // Deep copy of cart items
+                tracking: trackingSteps
+            };
+
+            // Add to history and clear cart
+            orderHistory.unshift(newOrder);
+            cartItems = [];
+            appliedPromoCode = null;
+            
+            // Update UI
+            updateCartCount();
+            renderCart(); 
+            showSection('profile'); 
+            renderProfile(); // Rerender profile to show new order
+            showToast(`Checkout Successful! Your Order ${newOrder.id} has been placed.`, 'success', 5000);
+        }, 1000);
+    }
+
+    // --- Profile Logic ---
+    function saveUserDataToStorage() {
+        try {
+            localStorage.setItem('movinResellersUserData', JSON.stringify(userData));
+        } catch (e) {
+            console.error("Error saving user data to local storage:", e);
+        }
+    }
+
+    function loadUserDataFromStorage() {
+        try {
+            const savedData = localStorage.getItem('movinResellersUserData');
+            if (savedData) {
+                const loadedData = JSON.parse(savedData);
+                userData.name = loadedData.name;
+                userData.email = loadedData.email;
+                userData.address = loadedData.address;
+            }
+        } catch (e) {
+            console.error("Error loading user data from local storage:", e);
+        }
+    }
+    
+    function renderWishlist() {
+        const wishlistContainer = document.getElementById('wishlistGrid');
+        const wishlistCount = document.getElementById('wishlistCount');
+        if (!wishlistContainer || !wishlistCount) return;
+
+        wishlistCount.textContent = wishlistItems.length;
+        if (wishlistItems.length === 0) {
+            wishlistContainer.innerHTML = '<p class="text-gray-500 col-span-full">Your wishlist is empty. Start saving items!</p>';
+            return;
+        }
+
+        wishlistContainer.innerHTML = wishlistItems.map(id => {
+            const item = products.find(p => p.id === id);
+            if (!item) return '';
+
+            return `
+                <div class="flex items-center bg-white p-3 rounded-lg shadow-sm border border-border-color">
+                    <img src="${item.image}" alt="${item.name}" class="w-16 h-16 object-cover rounded-md mr-4">
+                    <div class="flex-grow">
+                        <p class="font-bold text-gray-900 truncate">${item.name}</p>
+                        <p class="font-semibold text-teal-600">${formatPrice(item.price)}</p>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="addToCart(event, ${item.id})" class="text-teal-600 hover:text-teal-800 p-1" title="Add to Cart">
+                            <i class="fas fa-cart-plus"></i>
+                        </button>
+                        <button onclick="toggleWishlist(event, ${item.id})" class="text-red-500 hover:text-red-700 p-1" title="Remove from Wishlist">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderProfile() {
+        document.getElementById('profileName').textContent = userData.name;
+        document.getElementById('profileNameDisplay').textContent = userData.name;
+        document.getElementById('profileNameReadonly').textContent = userData.name;
+        document.getElementById('profileMemberSinceReadonly').textContent = userData.memberSince;
+        
+        // Populate edit form
+        document.getElementById('editProfileName').value = userData.name;
+        document.getElementById('editProfileEmail').value = userData.email;
+        document.getElementById('editProfileAddress').value = userData.address;
+
+        // Render Wishlist
+        renderWishlist();
+
+        // Render Order History
+        const ordersContainer = document.getElementById('orderHistoryList');
+        if (!ordersContainer) return;
+
+        if (orderHistory.length === 0) {
+            ordersContainer.innerHTML = '<p class="text-gray-500 italic">No orders found.</p>';
+            return;
+        }
+
+        let ordersHtml = orderHistory.map(order => {
+            let statusClass = 'bg-gray-200 text-gray-700';
+            if (order.status === 'Delivered') {
+                statusClass = 'bg-green-100 text-green-700';
+            } else if (order.status === 'Shipped') {
+                statusClass = 'bg-blue-100 text-blue-700';
+            } else if (order.status === 'Confirmed') {
+                statusClass = 'bg-teal-100 text-teal-700';
+            }
+            return `
+                <li class="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm border border-border-color">
+                    <div>
+                        <p class="font-bold">${order.id}</p>
+                        <p class="text-sm text-gray-500">${order.date}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold text-teal-600">${formatPrice(order.total)}</p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="${statusClass} text-xs font-medium px-3 py-1 rounded-full">${order.status}</span>
+                        <button onclick="showOrderTracking('${order.id}')" class="text-blue-500 hover:text-blue-700 text-sm font-semibold" title="Track Order">
+                            <i class="fas fa-truck"></i>
+                        </button>
+                    </div>
+                </li>
+            `;
+        });
+
+        ordersContainer.innerHTML = `<ul class="space-y-3">${ordersHtml}</ul>`;
+    }
+
+    function showOrderTracking(orderId) {
+        const order = orderHistory.find(o => o.id === orderId);
+        const timelineContainer = document.getElementById('trackingTimeline');
+        
+        if (!order || !order.tracking || !timelineContainer) {
+            showToast('Tracking information not available for this order.', 'error');
+            return;
+        }
+
+        const currentStatus = order.tracking[order.tracking.length - 1].status;
+        
+        // Mock a future delivery date for unshipped items
+        const estDate = currentStatus === 'Delivered' 
+            ? order.tracking.find(t => t.status === 'Delivered').time
+            : new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toLocaleDateString();
+
+        document.getElementById('trackingOrderId').textContent = order.id;
+        document.getElementById('trackingEstDate').textContent = estDate;
+        document.getElementById('trackingTotalItems').textContent = order.items.length;
+
+
+        const allPossibleSteps = ['Order Placed', 'Processing', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered'];
+        
+        timelineContainer.innerHTML = allPossibleSteps.map(step => {
+            const foundStep = order.tracking.find(t => t.status === step);
+            const isCompleted = foundStep || allPossibleSteps.indexOf(step) < allPossibleSteps.indexOf(currentStatus);
+            const dotClass = isCompleted ? 'active' : '';
+            const textClass = isCompleted ? 'font-semibold text-teal-600' : 'text-gray-500';
+            const time = foundStep ? foundStep.time : 'Pending';
+
+            return `
+                <div class="timeline-item">
+                    <div class="timeline-dot ${dotClass}"></div>
+                    <div class="${textClass}">
+                        <p class="text-md">${step}</p>
+                        <p class="text-xs text-gray-500">${time}</p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        showSection('orderTracking');
+    }
+
+    function handleProfileSubmit(event) {
+        // ... (Profile Submit function remains the same)
+        event.preventDefault();
+        const newName = document.getElementById('editProfileName').value.trim();
+        const newEmail = document.getElementById('editProfileEmail').value.trim();
+        const newAddress = document.getElementById('editProfileAddress').value.trim();
+
+        // Basic validation (can be enhanced)
+        if (!newName || !newEmail || !newAddress) {
+             showToast('All profile fields must be filled out.', 'error');
+             return;
+        }
+
+        userData.name = newName;
+        userData.email = newEmail;
+        userData.address = newAddress;
+        
+        // Update the mock users array for the current user (if present)
+        const userIndex = users.findIndex(u => u.email === 'jane.doe@example.com');
+        if (userIndex > -1) {
+            users[userIndex].name = newName;
+            users[userIndex].email = newEmail;
+        }
+
+
+        saveUserDataToStorage();
+        renderProfile();
+        showToast('Profile updated successfully!', 'success');
+    }
+
+    // --- Search Logic ---
+    function executeSearch() {
+        // ... (Search Logic remains the same)
+        const searchInput = document.getElementById('mainSearchInput');
+        const query = searchInput.value.trim().toLowerCase();
+
+        if (!query) {
+            showToast("Please enter a search term.", 'info');
+            return;
+        }
+
+        // 1. Filter Products
+        const results = products.filter(product => {
+            const name = product.name.toLowerCase();
+            const category = product.category.toLowerCase();
+            const description = product.description.toLowerCase();
+            return name.includes(query) || category.includes(query) || description.includes(query);
+        });
+
+        // 2. Update the Results Section
+        const gridContainer = document.getElementById('searchResultsGrid');
+        document.getElementById('searchQueryDisplay').textContent = query;
+        document.getElementById('searchResultCount').textContent = results.length;
+
+        if (results.length > 0) {
+            gridContainer.innerHTML = '';
+            results.forEach(product => {
+                const productCard = createProductCard(product);
+                gridContainer.appendChild(productCard);
+            });
+        } else {
+            gridContainer.innerHTML = `<p class="col-span-full text-center text-gray-500 py-10">
+                Sorry, no products matched your search for "${query}".
+            </p>`;
+        }
+
+        showSection('searchResults');
+        searchInput.value = '';
+    }
+
+    // --- Admin Logic ---
+    function checkAdminPersistence() {
+        // ... (Admin Persistence remains the same)
+        const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+        if (isTokenValid(token)) {
+            adminLoginForm.classList.add('hidden');
+            adminContent.classList.remove('hidden');
+        } else {
+            adminLoginForm.classList.remove('hidden');
+            adminContent.classList.add('hidden');
+        }
+    }
+
+    function attemptAdminLogin() {
+        // ... (Admin Login remains the same, but uses new token logic)
+        showLoader();
+        setTimeout(() => {
+            hideLoader();
+            const enteredPassword = adminPasswordInput.value;
+            
+            // Check password against the existing constant
+            if (enteredPassword === ADMIN_PASSWORD) {
+                // New Security: Generate and store the time-stamped token
+                const token = generateAuthToken();
+                localStorage.setItem(ADMIN_TOKEN_KEY, token); 
+
+                adminLoginForm.classList.add('hidden');
+                adminContent.classList.remove('hidden');
+                loginMessage.classList.add('hidden');
+                
+                showAdminDashboard();
+                showToast('Login Successful! Welcome, Admin.', 'success');
+            } else {
+                localStorage.removeItem(ADMIN_TOKEN_KEY);
+                loginMessage.classList.remove('hidden');
+                adminPasswordInput.value = '';
+                showToast('Incorrect Password.', 'error', 3000);
+            }
+        }, 500);
+    }
+
+    function adminLogout() {
+        // ... (Admin Logout remains the same)
+        localStorage.removeItem(ADMIN_TOKEN_KEY);
+        adminContent.classList.add('hidden');
+        adminLoginForm.classList.remove('hidden');
+        adminPasswordInput.value = '';
+        showSection('home');
+        showToast('Admin logged out successfully.', 'info');
+    }
+
+    function switchAdminTab(tabId) {
+        document.querySelectorAll('.admin-tab-content').forEach(content => content.classList.add('hidden'));
+        document.querySelectorAll('.admin-tab-button').forEach(btn => btn.classList.remove('active', 'bg-teal-600', 'text-white'));
+        document.querySelectorAll('.admin-tab-button').forEach(btn => btn.classList.add('bg-gray-200', 'text-gray-700'));
+        
+        document.getElementById(`admin${tabId.charAt(0).toUpperCase() + tabId.slice(1)}View`).classList.remove('hidden');
+        document.getElementById(`tab-${tabId}`).classList.add('active', 'bg-teal-600', 'text-white');
+        document.getElementById(`tab-${tabId}`).classList.remove('bg-gray-200', 'text-gray-700');
+
+        if (tabId === 'products') {
+            renderAdminProductList();
+        } else if (tabId === 'collaborators') {
+            renderCollaboratorsList();
+        }
+    }
+
+    function renderAdminDashboard() {
+        const metricsGrid = document.getElementById('metricsGrid');
+
+        // Calculate Metrics
+        const totalProducts = products.length;
+        const totalOrders = orderHistory.length;
+        const totalRevenue = orderHistory.reduce((sum, order) => sum + order.total, 0);
+        const totalReviews = products.reduce((sum, product) => sum + (product.reviews ? product.reviews.length : 0), 0);
+        const totalRatingSum = products.reduce((sum, product) => sum + product.rating, 0);
+        const avgRating = totalProducts > 0 ? (totalRatingSum / totalProducts).toFixed(2) : 'N/A';
+        const totalCartItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+        const totalUsers = users.length; // NEW
+        const productsInWishlist = wishlistItems.length; // NEW
+
+        const metrics = [
+            { title: "Total Products", value: totalProducts, icon: "fas fa-cubes", color: "text-blue-500" },
+            { title: "Total Orders", value: totalOrders, icon: "fas fa-clipboard-list", color: "text-purple-500" },
+            { title: "Total Revenue", value: formatPrice(totalRevenue), icon: "fas fa-dollar-sign", color: "text-green-500" },
+            { title: "Avg Product Rating", value: avgRating, icon: "fas fa-star", color: "text-yellow-500" },
+            { title: "Total Users", value: totalUsers, icon: "fas fa-users", color: "text-teal-500" }, // NEW
+            { title: "In Wishlist", value: productsInWishlist, icon: "fas fa-heart", color: "text-red-500" }, // NEW
+        ];
+
+        metricsGrid.innerHTML = metrics.map(metric => `
+            <div class="bg-secondary-bg p-6 rounded-2xl shadow-lg border border-border-color transition-transform hover:shadow-xl">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-semibold text-gray-500">${metric.title}</p>
+                    <i class="${metric.icon} ${metric.color} text-2xl"></i>
+                </div>
+                <p class="text-3xl font-extrabold mt-3 ${metric.color}">${metric.value}</p>
+            </div>
+        `).join('');
+    }
+
+    function showAdminDashboard() {
+        checkAdminPersistence(); // Check if they are already logged in
+        if (adminContent.classList.contains('hidden')) {
+            // If they are not logged in, the checkAdminPersistence function will ensure the login form is shown.
+            return;
+        }
+        switchAdminTab('dashboard');
+        renderAdminDashboard();
+    }
+
+    // Admin Product Management (List, Edit, Delete)
+    function renderAdminProductList() {
+        const listContainer = document.getElementById('adminProductList');
+        const adminSearchInput = document.getElementById('adminSearchInput');
+
+        if (!listContainer) return;
+
+        const searchQuery = adminSearchInput ? adminSearchInput.value.toLowerCase() : '';
+
+        const filteredProducts = products.filter(product => {
+            const name = product.name.toLowerCase();
+            const id = product.id.toString();
+            return name.includes(searchQuery) || id.includes(searchQuery);
+        });
+
+        listContainer.innerHTML = '';
+
+        if (filteredProducts.length === 0) {
+            listContainer.innerHTML = `<p class="text-center text-gray-500 py-6">No products match "${searchQuery}".</p>`;
+            return;
+        }
+
+        filteredProducts.forEach(product => {
+            const productItem = document.createElement('div');
+            productItem.id = `admin-product-${product.id}`;
+            productItem.classList.add('flex', 'flex-col', 'sm:flex-row', 'justify-between', 'items-start', 'sm:items-center', 'bg-secondary-bg', 'p-4', 'rounded-xl', 'shadow-md', 'border', 'border-border-color');
+            
+            let stockColor = 'text-green-600';
+            if (product.stockStatus === 'lowStock') stockColor = 'text-orange-500';
+            if (product.stockStatus === 'soldOut') stockColor = 'text-red-500';
+
+            productItem.innerHTML = `
+                <div class="flex items-center space-x-4 mb-3 sm:mb-0">
+                    <img src="${product.image}" alt="${product.name}" class="w-12 h-12 object-cover rounded-md">
+                    <div>
+                        <p class="font-bold text-lg text-gray-900">${product.name}</p>
+                        <p class="text-sm text-gray-500">ID: ${product.id} | ${product.category}</p>
+                        ${product.hasVideo ? '<span class="text-xs font-semibold text-blue-500"><i class="fas fa-video"></i> Video</span>' : ''}
+                    </div>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <span class="font-bold">${formatPrice(product.price)}</span>
+                    <span class="font-semibold text-sm ${stockColor}">${product.stockStatus.toUpperCase()}</span>
+                    <div class="flex space-x-2">
+                        <button onclick="showEditModal(${product.id})" class="text-blue-500 hover:text-blue-700 p-2 rounded-full hover:bg-gray-100 transition-colors" title="Edit Product">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteProduct(${product.id})" class="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-gray-100 transition-colors" title="Delete Product">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            listContainer.appendChild(productItem);
+        });
+    }
+
+    function deleteProduct(productId) {
+        // ... (Delete Product remains the same)
+        if (!confirm(`Are you sure you want to delete Product ID ${productId}? This action cannot be undone.`)) {
+            return;
+        }
+
+        const initialLength = products.length;
+        products = products.filter(p => p.id !== productId);
+
+        if (products.length < initialLength) {
+            // Remove from wishlist too
+            wishlistItems = wishlistItems.filter(id => id !== productId);
+            saveWishlistToStorage();
+
+            showToast(`Product ID ${productId} deleted successfully.`, 'success');
+            renderAdminProductList();
+            applyFiltersAndSort(); // Update front end
+            renderAdminDashboard(); // Refresh metrics
+        } else {
+            showToast('Product not found or failed to delete.', 'error');
+        }
+    }
+
+    function hideEditModal() {
+        editProductModal.style.display = 'none';
+        editProductForm.reset();
+    }
+
+    function showAddProductModal() {
+        // ... (Show Add Product Modal remains the same)
+        const modalTitle = document.getElementById('editProductNameTitle');
+        const form = document.getElementById('editProductForm');
+        
+        modalTitle.textContent = 'NEW Product';
+        form.reset();
+        document.getElementById('editProductId').value = 'NEW';
+        document.querySelector('#editProductForm button[type="submit"]').innerHTML = '<i class="fas fa-plus-circle mr-2"></i> Create Product';
+        
+        editProductModal.style.display = 'flex';
+    }
+
+    function showEditModal(productId) {
+        // ... (Show Edit Modal remains the same)
+        const product = products.find(p => p.id === productId);
+
+        if (!product) {
+            showToast("Product not found!", 'error');
+            return;
+        }
+        
+        document.querySelector('#editProductForm button[type="submit"]').innerHTML = '<i class="fas fa-save mr-2"></i> Save Changes';
+        document.getElementById('editProductId').value = product.id;
+        document.getElementById('editProductNameTitle').textContent = product.name;
+        document.getElementById('editName').value = product.name;
+        document.getElementById('editPrice').value = product.price; // Keep price as number for input field
+        document.getElementById('editCategory').value = product.category;
+        document.getElementById('editDescription').value = product.description;
+        document.getElementById('editIsNew').checked = product.isNew;
+        document.getElementById('editHasVideo').checked = product.hasVideo; // NEW: Video Checkbox
+        document.getElementById('editStockStatus').value = product.stockStatus;
+
+        editProductModal.style.display = 'flex';
+    }
+
+    function displayValidationError(inputElement, message) {
+        // ... (Validation helper remains the same)
+        inputElement.classList.add('input-error');
+        const errorText = document.createElement('p');
+        errorText.classList.add('error-text');
+        errorText.textContent = message;
+        inputElement.parentNode.appendChild(errorText);
+    }
+
+    function handleEditFormSubmit(event) {
+        // ... (Edit Form Submit remains the same, but includes new field)
+        event.preventDefault();
+        
+        // Clear previous errors
+        document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+        document.querySelectorAll('.error-text').forEach(el => el.remove());
+        
+        let hasError = false;
+        
+        const nameInput = document.getElementById('editName');
+        const priceInput = document.getElementById('editPrice');
+        const descriptionInput = document.getElementById('editDescription');
+        const priceValue = parseFloat(priceInput.value);
+
+        if (!nameInput.value.trim()) {
+            displayValidationError(nameInput, 'Name is required.');
+            hasError = true;
+        }
+        if (isNaN(priceValue) || priceValue <= 0) {
+            displayValidationError(priceInput, 'Price must be a valid number greater than 0.');
+            hasError = true;
+        }
+        if (descriptionInput.value.trim().length < 20) {
+            displayValidationError(descriptionInput, 'Description must be at least 20 characters.');
+            hasError = true;
+        }
+
+        if (hasError) {
+            showToast('Please correct the validation errors.', 'error');
+            return;
+        }
+
+        // Gather new data
+        const productId = document.getElementById('editProductId').value;
+        const newProductData = {
+            name: nameInput.value.trim(),
+            price: priceValue,
+            category: document.getElementById('editCategory').value,
+            description: descriptionInput.value.trim(),
+            isNew: document.getElementById('editIsNew').checked,
+            hasVideo: document.getElementById('editHasVideo').checked, // NEW: Video Checkbox
+            stockStatus: document.getElementById('editStockStatus').value,
+            tag: '', // Reset tag to prevent unexpected featured items
+        };
+
+        if (productId === 'NEW') {
+            // CREATE New Product
+            const newId = generateUniqueId('product');
+            const newProduct = {
+                id: newId,
+                ...newProductData,
+                image: 'https://images.unsplash.com/photo-1517336714730-bc558417f752?q=80&w=400&auto=format&fit=crop', // Default image
+                rating: 0,
+                reviews: [],
+            };
+            products.push(newProduct);
+            showToast(`Product "${newProduct.name}" created successfully!`, 'success');
+
+        } else {
+            // UPDATE Existing Product
+            const id = parseInt(productId);
+            const productIndex = products.findIndex(p => p.id === id);
+
+            if (productIndex === -1) {
+                showToast('Product to update not found!', 'error');
+                return;
+            }
+
+            products[productIndex] = {
+                ...products[productIndex],
+                ...newProductData,
+                // Do not overwrite image or rating/reviews fields
+            };
+            showToast(`Product "${newProductData.name}" updated successfully.`, 'success');
+        }
+
+        hideEditModal();
+        renderAdminProductList();
+        applyFiltersAndSort(); // Refresh the main view
+        renderAdminDashboard(); // Refresh metrics
+    }
+
+    // NEW: Collaborator/User Management
+    function renderCollaboratorsList() {
+        const listContainer = document.getElementById('collaboratorsList');
+        if (!listContainer) return;
+
+        listContainer.innerHTML = `
+            <div class="mb-4 bg-yellow-100 p-4 rounded-lg border-l-4 border-yellow-500 text-yellow-700">
+                <p class="font-bold">NOTE:</p>
+                <p class="text-sm">Only the Admin can change roles. Collaborators can access the Admin portal using the secret password, but their role limits their access on a real backend.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            ${users.map(user => {
+                const isCollaborator = user.role === 'Collaborator';
+                const isCustomer = user.role === 'Customer';
+                const roleClass = isCollaborator ? 'bg-teal-100 text-teal-700' : (isCustomer ? 'bg-gray-100 text-gray-700' : 'bg-red-100 text-red-700');
+
+                return `
+                    <div class="bg-secondary-bg p-4 rounded-lg shadow-md border border-border-color">
+                        <div class="flex justify-between items-center">
+                            <p class="font-bold text-lg">${user.name}</p>
+                            <span class="text-xs font-semibold px-3 py-1 rounded-full ${roleClass}">${user.role.toUpperCase()}</span>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-1">${user.email}</p>
+                        <p class="text-xs text-gray-400">Joined: ${user.memberSince} | Last Seen: ${user.lastLogin}</p>
+                        <div class="mt-3 flex justify-end space-x-2">
+                            <button onclick="changeUserRole(${user.id}, 'Collaborator')" ${isCollaborator ? 'disabled' : ''} class="text-sm bg-teal-500 text-white px-3 py-1 rounded-full ${isCollaborator ? 'opacity-50' : 'hover:bg-teal-600'}">Make Collab</button>
+                            <button onclick="changeUserRole(${user.id}, 'Customer')" ${isCustomer ? 'disabled' : ''} class="text-sm bg-gray-500 text-white px-3 py-1 rounded-full ${isCustomer ? 'opacity-50' : 'hover:bg-gray-600'}">Make Customer</button>
+                        </div>
+                    </div>
+                `;
+            }).join('')}
+            </div>
+        `;
+    }
+
+    function changeUserRole(userId, newRole) {
+        const userIndex = users.findIndex(u => u.id === userId);
+        if (userIndex > -1) {
+            if (users[userIndex].role === 'Admin') {
+                showToast('Cannot change the role of the primary Admin user.', 'error');
+                return;
+            }
+            users[userIndex].role = newRole;
+            renderCollaboratorsList(); // Re-render the list
+            showToast(`${users[userIndex].name}'s role updated to ${newRole}.`, 'success');
+        }
+    }
+
+
+    // --- Initialization ---
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadCartFromStorage();
+        loadUserDataFromStorage();
+        updateCartCount();
+        applyFiltersAndSort(); // Initial render
+
+        // Attach ripple effect to all buttons with class 'ripple-effect'
+        document.querySelectorAll('.ripple-effect').forEach(button => {
+            button.addEventListener('click', createRipple);
+        });
+
+        // Attach event listeners for forms/buttons
+        if (themeToggle) themeToggle.addEventListener('click', toggleTheme);
+        if (adminLoginButton) adminLoginButton.addEventListener('click', attemptAdminLogin);
+        if (adminPasswordInput) adminPasswordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') attemptAdminLogin();
+        });
+        if (editProductForm) editProductForm.addEventListener('submit', handleEditFormSubmit);
+        const profileEditForm = document.getElementById('profileEditForm');
+        if (profileEditForm) profileEditForm.addEventListener('submit', handleProfileSubmit);
+
+
+        // Default to home view if no hash is present
+        if (!window.location.hash) {
+            showSection('home');
+        }
+    });
+
+    // Ensure cart update also refreshes summary
+    const originalUpdateCartCount = updateCartCount;
+    updateCartCount = function() {
+        originalUpdateCartCount();
+        renderCartSummary(); 
+    };
+
+    // Ensure showSection updates admin state correctly with TOKEN CHECK
+    const originalShowSection = showSection;
+    showSection = function(sectionId) {
+        if (sectionId === 'admin') {
+            const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+            // NOW we check for a valid, unexpired token instead of just 'true'
+            if (isTokenValid(token)) {
+                 // Ensures the admin content is visible if the token is valid
+                 document.getElementById('adminLoginForm').classList.add('hidden');
+                 document.getElementById('adminContent').classList.remove('hidden');
+                 showAdminDashboard();
+            } else {
+                 // If the token is invalid or expired, force the user to see the login box
+                 document.getElementById('adminLoginForm').classList.remove('hidden');
+                 document.getElementById('adminContent').classList.add('hidden');
+            }
+        }
+        originalShowSection(sectionId);
+    };
+</script>
+</body>
+</html> 
+<script>
+/**
+ * Optional backend sync shim.
+ * Place this after your `products` variable is defined in index.html
+ * It will attempt to fetch /api/products and replace the local `products` array.
+ * If API is not available it silently keeps the local mock data.
+ */
+(async function trySyncFromApi(){
+  const API = (window.API_URL || '') || 'http://localhost:4000';
+  try {
+    const resp = await fetch(API + '/api/products');
+    if (!resp.ok) return; // keep local products
+    const remote = await resp.json();
+    if (Array.isArray(remote) && remote.length) {
+      // Overwrite the global products array with live data
+      products = remote;
+      // Re-render UI if your renderProducts() is defined
+      try { applyFiltersAndSort(); } catch(e){ try { renderProducts(products); }catch(e){} }
+      console.info('Products synced from API.');
+    }
+  } catch (err) {
+    // network unreachable - silently ignore
+    console.info('API sync not available.');
+  }
+})();
+</script>
